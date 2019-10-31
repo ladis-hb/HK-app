@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">Ladis Device Application</string>
+    <string name="title_activity_home">HomeActivity</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="refresh">刷新</string>
+    <string name="history">历史</string>
+    <string name="ElectricityMeter">设备列表</string>
+    <string name="DeviceInfo">设备信息</string>
+    <string name="operation">操作</string>
+    <string name="AC">空调</string>
+    <string name="EM">电量仪</string>
+    <string name="TH">温湿度</string>
+    <string name="warning">错误信息</string>
+    <string name="ConfigSerialPort">串口设备配置</string>
+    <string name="TestPage">测试页面</string>
+    <string name="SAVE">保存</string>
+    <string name="OPEN">打开端口</string>
+    <string name="Close">关闭端口</string>
+    <string name="SerialPort">串口</string>
+    <string name="InitData">数据库初始化</string>
+    <string name="RefreshData">载入数据库</string>
+    <string name="BatteryInfo">电池信息</string>
+    <string name="IOInfo">输入输出</string>
+    <string name="BACK">返回</string>
+    <string name="historyData">历史数据</string>
+    <string name="Finish">完成</string>
+    <string name="DELETE">删除</string>
+    <string name="AddDevice">添加设备</string>
+    <string name="ChooseProtocol">选择协议</string>
+    <string name="DeviceName">设备名称:</string>
+    <string name="required">必填项</string>
+    <string name="Add">添加</string>
+
+</resources>

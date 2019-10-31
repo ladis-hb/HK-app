@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".activity.TestActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <EditText
+            android:id="@+id/test_txt_send"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:hint="send data ..."/>
+
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <EditText
+            android:id="@+id/testactivity_txt_baudrate"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:hint="baudrate"
+            android:text="115200"
+            />
+        <Button
+            android:id="@+id/test_btn1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Send Port1"/>
+        <Button
+            android:id="@+id/test_btn2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Send Port2"/>
+        <Button
+            android:id="@+id/test_btn3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Send Port3"/>
+        <Button
+            android:id="@+id/test_btn4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Send Port4"/>
+        <Button
+            android:id="@+id/test_btnTest12345"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="test"/>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="recv"/>
+    <EditText
+        android:id="@+id/test_txt_recv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="50dp"
+        android:hint="receive msg ..."/>
+
+</LinearLayout>

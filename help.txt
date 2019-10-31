@@ -1,0 +1,8 @@
+type,id,name,code(ac/io/em)
+protocol,id,type_code,name,code
+order,id,protocol_code,code,str,rule,encoding,seq
+result,id,order_code,field_name,display_name,start_addr,len,ratio,prefix,suffix,data_type(0/1/2),lower_limit,upper_limit,seq
+    warn_flag:0=normal;1=use lower and upper limits;2=use warn_cfg
+warn_cfg,id,start_addr,len,str(0=normal/1=error),warn_enum(0=voltage/1=normal)
+warn_his,id,dev_name,dev_type,warn_title,warn_content,create_time
+dev,id,name,serial_port_no,type_code,protocol_code

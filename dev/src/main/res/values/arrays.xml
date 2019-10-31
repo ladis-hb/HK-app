@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="list_entries">
+        <item>UPS</item>
+        <item>空调</item>
+        <item>电量仪</item>
+        <item>温湿度</item>
+    </string-array>
+    <string-array name="list_entries_value">
+        <item>value1</item>
+        <item>value2</item>
+        <item>value3</item>
+        <item>value4</item>
+    </string-array>
+    <string-array name="list_entries_value2">
+        <item>value12</item>
+        <item>value22</item>
+        <item>value32</item>
+        <item>value42</item>
+    </string-array>
+
+    <string-array name="list_dev_type">
+        <item>所有</item>
+        <item>UPS</item>
+        <item>空调</item>
+        <item>电量仪</item>
+        <item>温湿度</item>
+    </string-array>
+</resources>
