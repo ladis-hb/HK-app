@@ -134,9 +134,9 @@ public class DevTHFragment extends Fragment {
                 startActivity(intent);
             }
         });
+        loadTh();
+        showDevInfo();
         timer.schedule(task, 1000,1000);
-
-
         return view;
     }
 

@@ -9,9 +9,12 @@
     <string name="ElectricityMeter">设备列表</string>
     <string name="DeviceInfo">设备信息</string>
     <string name="operation">操作</string>
+    <string name="Setting">设置</string>
+    <string name="HOME">主页</string>
     <string name="AC">空调</string>
     <string name="EM">电量仪</string>
     <string name="TH">温湿度</string>
+    <string name="IO">IO</string>
     <string name="warning">错误信息</string>
     <string name="ConfigSerialPort">串口设备配置</string>
     <string name="TestPage">测试页面</string>
@@ -32,5 +35,6 @@
     <string name="DeviceName">设备名称:</string>
     <string name="required">必填项</string>
     <string name="Add">添加</string>
+    <string name="UPS">UPS</string>
 
 </resources>

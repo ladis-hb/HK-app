@@ -134,7 +134,9 @@ String TAG = "DEVEM";
                 startActivity(intent);
             }
         });
-        timer.schedule(task, 1000,1000);
+        loadEm();
+        showDevInfo();
+       timer.schedule(task, 1000,1000);
         return view;
     }
 
@@ -170,7 +172,6 @@ String TAG = "DEVEM";
     }
 
     private void showDevInfo() {
-
         String str="";
         for(DevEntity entitys : LocalData.devlist) {
             String name=entitys.getTypeCode();
@@ -178,8 +179,6 @@ String TAG = "DEVEM";
                 String devcode = entitys.getCode();
                 Map<String, ViewEntity> map = LocalData.devDataMap.get(devcode);
                 if(map!=null) {
-
-
                     StringBuffer sb = new StringBuffer();
                     sb.append("设备名称: "+entitys.getName()+"\n");
                     for(String key : map.keySet()) {
@@ -190,7 +189,6 @@ String TAG = "DEVEM";
                 }
             }
         }
-       // Log.e(TAG,str);
         txtInfo.setText(str);
     }
 

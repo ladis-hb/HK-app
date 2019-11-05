@@ -39,6 +39,7 @@ public class NavFragment extends Fragment {
     DevIoFragment devIoFragment;
     DevSettingFragment devSettingFragment;
 
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -58,13 +59,13 @@ adapter.displayHomeFrag();
 
     private List<String> getNavs() {
         List<String> list = new ArrayList<>();
-        list.add("Home");
-        list.add("UPS");
-        list.add("AC");
-        list.add("EM");
-        list.add("TH");
-        list.add("IO");
-        list.add("Setting");
+        list.add(this.getString(R.string.HOME));
+        list.add(this.getString(R.string.UPS));
+        list.add(this.getString(R.string.AC));
+        list.add(this.getString(R.string.EM));
+        list.add(this.getString(R.string.TH));
+        list.add(this.getString(R.string.IO));
+        list.add(this.getString(R.string.Setting));
         return list;
     }
 
@@ -95,69 +96,77 @@ adapter.displayHomeFrag();
                 @Override
                 public void onClick(View v) {
                     String str = navList.get(viewHolder.getAdapterPosition());
-                    if(str.equals("Home")) {
-                        Log.d(TAG, "~~~clicked home");
-                        if(devHomeFragment == null) {
-                            devHomeFragment = new DevHomeFragment();
-                            fragments.add(devHomeFragment);
-                            hideOtherFragment(devHomeFragment, true);
-                        } else {
-                            hideOtherFragment(devHomeFragment, false);
-                        }
-                    } else if(str.contains("UPS")) {
-                        if(devUpsFragment == null) {
-                            devUpsFragment = new DevUpsFragment();
-                            fragments.add(devUpsFragment);
-                            hideOtherFragment(devUpsFragment, true);
-                        } else {
-                            hideOtherFragment(devUpsFragment, false);
-                        }
-                    } else if(str.contains("AC")) {
-                        if(devAcFragment == null) {
-                            devAcFragment = new DevAcFragment();
-                            fragments.add(devAcFragment);
-                            hideOtherFragment(devAcFragment, true);
-                        } else {
-                            hideOtherFragment(devAcFragment, false);
-                        }
-                    } else if(str.contains("EM")) {
-                        if(devEmFragment == null) {
-                            devEmFragment = new DevEmFragment();
-                            fragments.add(devEmFragment);
-                            hideOtherFragment(devEmFragment, true);
-                        } else {
-                            hideOtherFragment(devEmFragment, false);
-                        }
-                    } else if(str.equals("TH")) {
-                        Log.d(TAG, "~~~clicked 温湿度");
-                        if(devTHFragment == null) {
-                            devTHFragment = new DevTHFragment();
-                            fragments.add(devTHFragment);
-                            hideOtherFragment(devTHFragment, true);
-                        } else {
-                            hideOtherFragment(devTHFragment, false);
-                        }
-                    } else if(str.equals("IO")) {
-                        if(devIoFragment == null) {
-                            devIoFragment = new DevIoFragment();
-                            fragments.add(devIoFragment);
-                            hideOtherFragment(devIoFragment, true);
-                        } else {
-                            hideOtherFragment(devIoFragment, false);
-                        }
-                    } else if(str.equals("Setting")) {
-                        Log.d(TAG, "~~~clicked setting");
-                        if(devSettingFragment == null) {
-                            devSettingFragment = new DevSettingFragment();
-                            fragments.add(devSettingFragment);
-                            hideOtherFragment(devSettingFragment, true);
-                        } else {
-                            hideOtherFragment(devSettingFragment, false);
-                        }
+                    Log.d(TAG, "~~~clicked "+str);
+                    switch (str)
+                    {
+                        case "主页":
+                            if(devHomeFragment == null) {
+                                devHomeFragment = new DevHomeFragment();
+                                fragments.add(devHomeFragment);
+                                hideOtherFragment(devHomeFragment, true);
+                            } else {
+                                hideOtherFragment(devHomeFragment, false);
+                            }
+                            break;
+                        case "UPS":
+                            if(devUpsFragment == null) {
+                                devUpsFragment = new DevUpsFragment();
+                                fragments.add(devUpsFragment);
+                                hideOtherFragment(devUpsFragment, true);
+                            } else {
+                                hideOtherFragment(devUpsFragment, false);
+                            }
+                            break;
+                        case  "空调":
+                            if(devAcFragment == null) {
+                                devAcFragment = new DevAcFragment();
+                                fragments.add(devAcFragment);
+                                hideOtherFragment(devAcFragment, true);
+                            } else {
+                                hideOtherFragment(devAcFragment, false);
+                            }
+                            break;
+                        case "电量仪":
+                            if(devEmFragment == null) {
+                                devEmFragment = new DevEmFragment();
+                                fragments.add(devEmFragment);
+                                hideOtherFragment(devEmFragment, true);
+                            } else {
+                                hideOtherFragment(devEmFragment, false);
+                            }
+                            break;
+                        case "温湿度":
+                            if(devTHFragment == null) {
+                                devTHFragment = new DevTHFragment();
+                                fragments.add(devTHFragment);
+                                hideOtherFragment(devTHFragment, true);
+                            } else {
+                                hideOtherFragment(devTHFragment, false);
+                            }
+                            break;
+                        /*case "IO":
+                            if(devIoFragment == null) {
+                                devIoFragment = new DevIoFragment();
+                                fragments.add(devIoFragment);
+                                hideOtherFragment(devIoFragment, true);
+                            } else {
+                                hideOtherFragment(devIoFragment, false);
+                            }
+                            break;*/
+
+                        case "设置":
+                            if(devSettingFragment == null) {
+                                devSettingFragment = new DevSettingFragment();
+                                fragments.add(devSettingFragment);
+                                hideOtherFragment(devSettingFragment, true);
+                            } else {
+                                hideOtherFragment(devSettingFragment, false);
+                            }
+                            break;
                     }
+
                 }
             });
-
 
             return viewHolder;
         }

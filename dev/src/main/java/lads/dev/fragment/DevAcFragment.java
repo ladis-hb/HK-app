@@ -192,12 +192,9 @@ public class DevAcFragment extends Fragment {
                 builder.create().show();
             }
         });
-
-
         loadAc();
-
+        showDevInfo();
         timer.schedule(task, 1000,5000);
-
         return view;
     }
 

@@ -222,17 +222,8 @@ public class DevUpsFragment extends Fragment {
             }
         });
 
-//        btnOpen.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                DevSettingFragment.devBizHandler1.addDevOpt();
-//            }
-//        });
-
         loadUps();
-
         timer.schedule(task, 1000,1000);
-
         return view;
     }
 
@@ -251,6 +242,7 @@ public class DevUpsFragment extends Fragment {
         for(DevEntity entity : LocalData.devlist) {
             if(entity.getTypeCode().equals("ups")) {
                 KeyValueEntity kv = new KeyValueEntity(entity.getCode(), entity.getName());
+                showDevInfo(entity.getCode());
                 list.add(kv);
             }
         }
@@ -291,11 +283,11 @@ public class DevUpsFragment extends Fragment {
         for(String key : map.keySet()) {
             ViewEntity ve = map.get(key);
             if(ve.getColumnIndex()==1) {
-                sb1.append(key+":"+ve.getValue()+newLine);
+                sb1.append(key+":"+ve.getValue()+"\n");
             } else if(ve.getColumnIndex()==2) {
-                sb2.append(key+":"+ve.getValue()+newLine);
+                sb2.append(key+":"+ve.getValue()+"\n");
             } else if (ve.getColumnIndex()==3) {
-                sb3.append(key+":"+ve.getValue()+newLine);
+                sb3.append(key+":"+ve.getValue()+"\n");
             }
         }
         txtBasicInfo.setText(sb1.toString());

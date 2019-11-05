@@ -10,7 +10,9 @@ import android.widget.GridLayout;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import lads.dev.entity.DataHisEntity;
@@ -63,9 +65,10 @@ public class DbDataService {
         getSysParam();
         getDevOpt();
     }
-
+//获取波特率
     public List<SpEntity> getSp() {
         List<SpEntity> list = new ArrayList<>();
+        Map<String,SpEntity> map = new HashMap<>();
         Cursor cursor = db.rawQuery("select * from sp order by seq", null);
         if(cursor.moveToFirst()) {
             do{
@@ -75,14 +78,17 @@ public class DbDataService {
                 entity.setBaudrate(cursor.getInt(cursor.getColumnIndex("baud_rate")));
                 entity.setSeq(cursor.getInt(cursor.getColumnIndex("seq")));
                 list.add(entity);
+                map.put(cursor.getString(cursor.getColumnIndex("seq")),entity);
             } while (cursor.moveToNext());
         }
         LocalData.splist = list;
+        LocalData.Cache_splist = map;
         return list;
     }
 
-
+//获取设备类型
     public List<TypeEntity> getDevType() {
+        Map<String,TypeEntity> map = new HashMap<>();
         List<TypeEntity> list = new ArrayList<>();
         Cursor cursor = db.rawQuery("select * from type", null);
         if(cursor.moveToFirst()) {
@@ -92,33 +98,77 @@ public class DbDataService {
                 entity.setName(cursor.getString(cursor.getColumnIndex("name")));
                 entity.setCode(cursor.getString(cursor.getColumnIndex("code")));
                 list.add(entity);
+                map.put(cursor.getString(cursor.getColumnIndex("code")),entity);
             } while (cursor.moveToNext());
         }
         LocalData.typelist = list;
+        LocalData.Cache_typelist = map;
         return list;
     }
-
+//获取协议号
     public List<ProtocolEntity> getProtocol() {
+        Map<String,ProtocolEntity> Cache_protocollist = new HashMap<>();
         List<ProtocolEntity> list = new ArrayList<>();
         Cursor cursor = db.rawQuery("select * from protocol", null);
         if(cursor.moveToFirst()) {
             do{
+                String code = cursor.getString(cursor.getColumnIndex("code"));
                 ProtocolEntity entity = new ProtocolEntity();
                 entity.setId(cursor.getInt(cursor.getColumnIndex("id")));
                 entity.setTypeCode(cursor.getString(cursor.getColumnIndex("type_code")));
                 entity.setName(cursor.getString(cursor.getColumnIndex("name")));
-                entity.setCode(cursor.getString(cursor.getColumnIndex("code")));
+                entity.setCode(code);
                 entity.setReadType(cursor.getString(cursor.getColumnIndex("read_type")));
                 list.add(entity);
+                Cache_protocollist.put(code,entity);
+
             } while (cursor.moveToNext());
         }
         LocalData.protocollist = list;
+        LocalData.Cache_protocollist = Cache_protocollist;
         return list;
     }
 
     public List<DevEntity> getDev() {
+        Map<String,List<DevEntity>> Cache_devlist = new HashMap<>();
+        Map<String,List<DevEntity>> Cache_all_devlist = new HashMap<>();
+
         List<DevEntity> list = new ArrayList<>();
         Cursor cursor = db.rawQuery("select * from dev order by sp_code,seq", null);
+        if(cursor.moveToFirst()) {
+            do{
+                String spNo = cursor.getString(cursor.getColumnIndex("sp_no"));
+                DevEntity entity = new DevEntity();
+                entity.setId(cursor.getInt(cursor.getColumnIndex("id")));
+                entity.setTypeCode(cursor.getString(cursor.getColumnIndex("type_code")));
+                entity.setProtocolCode(cursor.getString(cursor.getColumnIndex("protocol_code")));
+                entity.setName(cursor.getString(cursor.getColumnIndex("name")));
+                entity.setCode(cursor.getString(cursor.getColumnIndex("code")));
+                entity.setSpNo(spNo);
+                entity.setSpCode(cursor.getString(cursor.getColumnIndex("sp_code")));
+                entity.setOnlineFlag(cursor.getString(cursor.getColumnIndex("online_flag")));
+                entity.setSeq(cursor.getInt(cursor.getColumnIndex("seq")));
+                entity.setLostTimes(0);
+                list.add(entity);
+                if(Cache_devlist.containsKey(spNo)){
+                    Cache_devlist.get(spNo).add(entity);
+                }else {
+                    List<DevEntity> li = new ArrayList<>();
+                    li.add(entity);
+                    Cache_devlist.put(spNo,li);
+                }
+                //
+
+            } while (cursor.moveToNext());
+        }
+        LocalData.devlist = list;
+        LocalData.Cache_devlist = Cache_devlist;
+        return list;
+    }
+
+    public List<DevEntity> getDev(String spNo) {
+        List<DevEntity> list = new ArrayList<>();
+        Cursor cursor = db.rawQuery("select * from dev where spNo = "+spNo+" order by sp_code,seq", null);
         if(cursor.moveToFirst()) {
             do{
                 DevEntity entity = new DevEntity();
@@ -135,7 +185,6 @@ public class DbDataService {
                 list.add(entity);
             } while (cursor.moveToNext());
         }
-        LocalData.devlist = list;
         return list;
     }
 
@@ -178,34 +227,47 @@ public class DbDataService {
 
 
     public List<InstructionEntity> getInstruction() {
+        Map<String,List<InstructionEntity>> Cache_instructionlist = new HashMap<>();
         List<InstructionEntity> list = new ArrayList<>();
         Cursor cursor = db.rawQuery("select * from instruction order by seq", null);
         if(cursor.moveToFirst()) {
             do{
+                String protocol_code = cursor.getString(cursor.getColumnIndex("protocol_code"));
                 InstructionEntity entity = new InstructionEntity();
+
                 entity.setId(cursor.getInt(cursor.getColumnIndex("id")));
-                entity.setProtocolCode(cursor.getString(cursor.getColumnIndex("protocol_code")));
+                entity.setProtocolCode(protocol_code);
                 entity.setCode(cursor.getString(cursor.getColumnIndex("code")));
                 entity.setStr(cursor.getString(cursor.getColumnIndex("str")));
                 entity.setRule(cursor.getString(cursor.getColumnIndex("rule")));
                 entity.setEncoding(cursor.getString(cursor.getColumnIndex("encoding")));
                 entity.setSeq(cursor.getInt(cursor.getColumnIndex("seq")));
                 list.add(entity);
+                if(Cache_instructionlist.containsKey(protocol_code)){
+                    Cache_instructionlist.get(protocol_code).add(entity);
+                }else {
+                    List<InstructionEntity> li = new ArrayList<>();
+                    li.add(entity);
+                    Cache_instructionlist.put(protocol_code,li);
+                }
             } while (cursor.moveToNext());
         }
         cursor.close();
         LocalData.instructionlist = list;
+        LocalData.Cache_instructionlist = Cache_instructionlist;
         return list;
     }
 
     public List<ResultEntity> getResult() {
+        Map<String,List<ResultEntity>> Cache_resultlist = new HashMap<>();
         List<ResultEntity> list = new ArrayList<>();
         Cursor cursor = db.rawQuery("select * from result order by seq", null);
         if(cursor.moveToFirst()) {
             do{
+                String instruction_code = cursor.getString(cursor.getColumnIndex("instruction_code"));
                 ResultEntity entity = new ResultEntity();
                 entity.setId(cursor.getInt(cursor.getColumnIndex("id")));
-                entity.setInstructionCode(cursor.getString(cursor.getColumnIndex("instruction_code")));
+                entity.setInstructionCode(instruction_code);
                 entity.setFieldName(cursor.getString(cursor.getColumnIndex("field_name")));
                 entity.setDisplayName(cursor.getString(cursor.getColumnIndex("display_name")));
                 entity.setPrefix(cursor.getString(cursor.getColumnIndex("prefix")));
@@ -222,10 +284,18 @@ public class DbDataService {
                 entity.setUpperLimit(cursor.getString(cursor.getColumnIndex("upper_limit")));
                 entity.setSeq(cursor.getInt(cursor.getColumnIndex("seq")));
                 list.add(entity);
+                if(Cache_resultlist.containsKey(instruction_code)){
+                    Cache_resultlist.get(instruction_code).add(entity);
+                }else {
+                    List<ResultEntity> li = new ArrayList<>();
+                    li.add(entity);
+                    Cache_resultlist.put(instruction_code,li);
+                }
             } while (cursor.moveToNext());
         }
         cursor.close();
         LocalData.resultlist = list;
+        LocalData.Cache_resultlist = Cache_resultlist;
         return list;
     }
 
@@ -457,7 +527,7 @@ public class DbDataService {
 
         //sp
         db.execSQL("insert into sp(code,seq,baud_rate) values ('SerialPort1','1','2400')");
-        db.execSQL("insert into sp(code,seq,baud_rate) values ('SerialPort2','2','9600')");
+        db.execSQL("insert into sp(code,seq,baud_rate) values ('SerialPort2','2','19200')");
         db.execSQL("insert into sp(code,seq,baud_rate) values ('SerialPort3','3','9600')");
         db.execSQL("insert into sp(code,seq,baud_rate) values ('SerialPort4','4','9600')");
 
@@ -469,7 +539,7 @@ public class DbDataService {
 
         //protocol
         //ups
-        db.execSQL("insert into protocol(type_code,name,code,read_type) values ('ups','UPS_Ladis_01','ups_ladis_01','2')");
+        db.execSQL("insert into protocol(type_code,name,code,read_type) values ('ups','UPS_P101_01','ups_ladis_01','2')");
         //ac 6
         db.execSQL("insert into protocol(type_code,name,code,read_type) values ('ac','空调01','ac_ladis_01','1')");
         db.execSQL("insert into protocol(type_code,name,code,read_type) values ('ac','空调02','ac_ladis_02','1')");
@@ -514,8 +584,6 @@ public class DbDataService {
         db.execSQL("insert into instruction(protocol_code,code,str,rule,encoding,seq) values ('ups_ladis_01','ups_ladis_01_qri','5152490d0a','1=ascii|2=left1_right1|3=split_whitespace','UTF-8',6)");
         //ac
         db.execSQL("insert into instruction(protocol_code,code,str,rule,seq) values ('ac_ladis_01','ac_ladis_01_q','0103000000670420','1=number|2=left3_right2',1)");
-        //db.execSQL("insert into instruction(protocol_code,code,str,rule,seq) values ('ac_ladis_01','ac_ladis_01_q','010300060002240A','1=number|2=left3_right2',1)");
-
         db.execSQL("insert into instruction(protocol_code,code,str,rule,seq) values ('ac_ladis_02','ac_ladis_02_q','0203000000670413','1=number|2=left3_right2',1)");
         db.execSQL("insert into instruction(protocol_code,code,str,rule,seq) values ('ac_ladis_03','ac_ladis_03_q','03030000006705C2','1=number|2=left3_right2',1)");
         db.execSQL("insert into instruction(protocol_code,code,str,rule,seq) values ('ac_ladis_04','ac_ladis_04_q','0403000000670475','1=number|2=left3_right2',1)");
@@ -684,7 +752,19 @@ public class DbDataService {
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qgs_dd','输出负载百分比',2,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qgs_kk','Positive BUS voltage',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qgs_vv','Negative BUS voltage',1,1)");
-
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qgs_ss','P 电池电压',3,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qgs_xx','N 电池电压',3,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qgs_tt','最高温度',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qgs_bbb','Warning',4,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qbv_rr','电池电压',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qbv_nn','电池片数量',2,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qbv_mm','蓄电池组数',2,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qbv_cc','电池容量',2,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qbv_tt','电池保持时间',2,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qri_mm','额定输出电压',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qri_qq','额定输出电流',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qri_ss','额定电压',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qri_rr','额定输出频率',1,1)");
 
         //ac
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ac_ladis_01','q_2','蒸发器温度',1,1)");
@@ -694,20 +774,28 @@ public class DbDataService {
         //em
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_01','q_1','有效电流',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_01','q_2','有效电压',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_01','q_3','有效功率',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_02','q_1','有效电流',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_02','q_2','有效电压',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_02','q_3','有效功率',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_03','q_1','有效电流',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_03','q_2','有效电压',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_03','q_3','有效功率',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_04','q_1','有效电流',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_04','q_2','有效电压',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_04','q_3','有效功率',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_05','q_1','有效电流',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_05','q_2','有效电压',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_05','q_3','有效功率',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_06','q_1','有效电流',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_06','q_2','有效电压',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_06','q_3','有效功率',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_07','q_1','有效电流',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_07','q_2','有效电压',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_07','q_3','有效功率',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_08','q_1','有效电流',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_08','q_2','有效电压',1,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('em1_ladis_08','q_3','有效功率',1,1)");
 
         //th
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('th_ladis_01','q_1','温度',1,1)");

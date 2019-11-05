@@ -126,9 +126,9 @@ public class DevSettingFragment extends Fragment {
         }
     }
     EditText txtBaudrate1,txtBaudrate2,txtBaudrate3,txtBaudrate4,txtSql,txtUrl,txtWebsocket;
-    Button btnSave1,btnSave2,btnSave3,btnSave4,btnOpenPort1,btnOpenPort2,btnOpenPort3,btnOpenPort4,btnSql,btnUrl,btnConfig,btnTest ;
+    Button btnSave1,btnSave2,btnSave3,btnSave4,btnOpenPort1,btnOpenPort2,btnOpenPort3,btnOpenPort4,btnSql,btnUrl,btnConfig,btnTest ,btn_all_start;
     public static DevBizHandler devBizHandler1,devBizHandler2,devBizHandler3,devBizHandler4;
-    String strProtocol1,strProtocol2,strProtocol3,strProtocol4,strType1,strType2,strType3,strType4;
+    //String strProtocol1,strProtocol2,strProtocol3,strProtocol4,strType1,strType2,strType3,strType4;
     SerialPort serialPort1,serialPort2,serialPort3,serialPort4 ;
     SerialPortUtils serialPortUtils1,serialPortUtils2,serialPortUtils3,serialPortUtils4;
     private int baudrate1,baudrate2,baudrate3,baudrate4;
@@ -153,10 +153,16 @@ public class DevSettingFragment extends Fragment {
         btnOpenPort2 = (Button) view.findViewById(R.id.devSettingFragment_btn_open2);
         btnOpenPort3 = (Button) view.findViewById(R.id.devSettingFragment_btn_open3);
         btnOpenPort4 = (Button) view.findViewById(R.id.devSettingFragment_btn_open4);
+        //sql按钮
         btnSql = (Button) view.findViewById(R.id.btn111);
+        //http保存按钮
         btnUrl = (Button) view.findViewById(R.id.btnUrl);
+        //串口配置按钮
         btnConfig = (Button) view.findViewById(R.id.frg_setting_btn_config);
+        //测试页面
         btnTest = view.findViewById(R.id.test_page);
+        //一键载入数据打开所有端口
+        btn_all_start = view.findViewById(R.id.btn_all_start);
 
         txtSql = (EditText) view.findViewById(R.id.txt_sql_fragment_dev_setting);
         txtUrl = (EditText) view.findViewById(R.id.txtUrl);
@@ -169,7 +175,7 @@ public class DevSettingFragment extends Fragment {
         dbDataService = new DbDataService(dbHelper.getDb());
 
 
-
+        //初始化数据库
         Button btnInitData = (Button) view.findViewById(R.id.btn_initdata_fragment_dev_setting);
         btnInitData.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -189,6 +195,7 @@ public class DevSettingFragment extends Fragment {
                 }*/
             }
         });
+        //载入数据库
         Button btnRefreshData = (Button) view.findViewById(R.id.btn_refreshdata_fragment_dev_setting);
         btnRefreshData.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -203,69 +210,54 @@ public class DevSettingFragment extends Fragment {
                 }
             }
         });
+        //一键载入数据打开所有端口
+        btn_all_start.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                btnRefreshData.performClick();
+                btnSave1.performClick();
+                btnSave2.performClick();
+                btnSave3.performClick();
+                btnSave4.performClick();
+                btnOpenPort1.performClick();
+                btnOpenPort2.performClick();
+                btnOpenPort3.performClick();
+                btnOpenPort4.performClick();
+            }
+        });
 
+        //保存波特率配置
 
         btnSave1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                txtBaudrate1.setText("2400");
                 String strBaudrate = txtBaudrate1.getText().toString();
-                try {
-                    baudrate1 = Integer.parseInt(strBaudrate);
-
-                } catch (Exception e) {
-                    Toast.makeText(getContext(), "Input integer", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                dbDataService.updateBaudrate(baudrate1, 1);
-                Toast.makeText(getContext(), "Succeed", Toast.LENGTH_SHORT).show();
+                SaveBaudrate(strBaudrate,1);
             }
         });
         btnSave2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String strBaudrate = txtBaudrate2.getText().toString();
-                try {
-                    baudrate2 = Integer.parseInt(strBaudrate);
-
-                } catch (Exception e) {
-                    Toast.makeText(getContext(), "Input integer", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                dbDataService.updateBaudrate(baudrate2, 2);
-                Toast.makeText(getContext(), "Succeed", Toast.LENGTH_SHORT).show();
+                SaveBaudrate(strBaudrate,2);
             }
         });
         btnSave3.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String strBaudrate = txtBaudrate3.getText().toString();
-                try {
-                    baudrate3 = Integer.parseInt(strBaudrate);
-                } catch (Exception e) {
-                    Toast.makeText(getContext(), "Input integer", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                dbDataService.updateBaudrate(baudrate3, 3);
-                Toast.makeText(getContext(), "Succeed", Toast.LENGTH_SHORT).show();
+                SaveBaudrate(strBaudrate,3);
             }
         });
         btnSave4.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String strBaudrate = txtBaudrate4.getText().toString();
-                try {
-                    baudrate4 = Integer.parseInt(strBaudrate);
-                } catch (Exception e) {
-                    Toast.makeText(getContext(), "Input integer", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                dbDataService.updateBaudrate(baudrate4, 4);
-                Toast.makeText(getContext(), "Succeed", Toast.LENGTH_SHORT).show();
+                SaveBaudrate(strBaudrate,4);
             }
         });
 
-
+        //打开端口
         btnOpenPort1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -304,6 +296,7 @@ public class DevSettingFragment extends Fragment {
                 }
             }
         });
+
         btnOpenPort2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -477,13 +470,11 @@ public class DevSettingFragment extends Fragment {
                         URI uri = URI.create(s);
                         initMyWebsocket(uri);
                     }
-                } else {
-
                 }
             }
         });
 
-        EditText txt1 = (EditText) view.findViewById(R.id.txtTest_setting);
+       /* EditText txt1 = (EditText) view.findViewById(R.id.txtTest_setting);
         Button btn1 = (Button) view.findViewById(R.id.btnTest_setting);
         btn1.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -497,7 +488,7 @@ public class DevSettingFragment extends Fragment {
                     Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
-        });
+        });*/
 
         btnConfig.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -513,7 +504,8 @@ public class DevSettingFragment extends Fragment {
             }
         });
 
-        handlerData.postDelayed(runnableData, 10*60*1000); //timer 10min, send http and save data
+        handlerData.postDelayed(runnableData, 60);
+        //timer 10min, send http and save data
 
         //timer.schedule(task, 1000,5000);
 
@@ -535,11 +527,12 @@ public class DevSettingFragment extends Fragment {
 
     MyWebSocketClient client = null;
     private void initMyWebsocket(URI uri) {
+        Log.d(TAG,"初始化socket连接");
         if(client == null) {
             client = new MyWebSocketClient(uri) {
                 @Override
                 public void onMessage(String message) {
-
+                    Log.d(TAG,"初始化socket onMessage 监听");
                     /**
                      * 命令格式：{DeviceCode:"xxxx",OptCode:"StartUps",OptType:"operate/query"}
                      */
@@ -681,45 +674,45 @@ public class DevSettingFragment extends Fragment {
         dbDataService.getSp();
         dbDataService.getSysParam();
         for(SpEntity entity : LocalData.splist) {
-            if(entity.getSeq()==1) {
-                txtBaudrate1.setText(String.valueOf(entity.getBaudrate()));
-            } else if(entity.getSeq()==2) {
-                txtBaudrate2.setText(String.valueOf(entity.getBaudrate()));
-            } else if(entity.getSeq()==3) {
-                txtBaudrate3.setText(String.valueOf(entity.getBaudrate()));
-            } else if(entity.getSeq()==4) {
-                txtBaudrate4.setText(String.valueOf(entity.getBaudrate()));
+            switch (entity.getSeq()){
+                case 1:
+                    txtBaudrate1.setText(String.valueOf(entity.getBaudrate()));
+                    break;
+                case 2:
+                    txtBaudrate2.setText(String.valueOf(entity.getBaudrate()));
+                    break;
+                case 3:
+                    txtBaudrate3.setText(String.valueOf(entity.getBaudrate()));
+                    break;
+                case 4:
+                    txtBaudrate4.setText(String.valueOf(entity.getBaudrate()));
+                    break;
             }
         }
         for(SysParamEntity entity : LocalData.sysparamlist) {
-            if(entity.getParamName().equals("http_uri")) {
-                if(entity.getParamValue()!=null) {
+            switch (entity.getParamName()){
+                case "http_uri":
                     txtUrl.setText(entity.getParamValue());
-                }
-            } else if(entity.getParamName().equals("websocket_uri")) {
-                if(entity.getParamValue()!=null) {
+                    break;
+                case "websocket_uri":
                     txtWebsocket.setText(entity.getParamValue());
-                }
+                    break;
             }
+
         }
     }
+    //保存Baudrate
+    public void SaveBaudrate(String strBaudrate,int seq){
+        try {
+            baudrate1 = Integer.parseInt(strBaudrate);
 
-    //        devBizHandler1.setOnThrowErrorListener(new DevBizHandler.OnThrowErrorListener() {
-//            String str;
-//            @Override
-//            public void OnThrowError(String msg) {
-//                str=msg;
-//                handler.post(runnable);
-//            }
-//            Runnable runnable = new Runnable() {
-//                @Override
-//                public void run() {
-//                    Toast.makeText(getContext(), str, Toast.LENGTH_LONG).show();
-//                }
-//            };
-//        });
-
-
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Input integer", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        dbDataService.updateBaudrate(baudrate1, seq);
+        Toast.makeText(getContext(), "Succeed", Toast.LENGTH_SHORT).show();
+    }
 
 
     boolean runflag1 = false;

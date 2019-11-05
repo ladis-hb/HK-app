@@ -33,4 +33,20 @@ public class LocalData {
     public static List<DevOptEntity> devoptlist;
     public static String url = "";
     public static Map<String, Map<String, ViewEntity>> devDataMap = new HashMap<>();
+
+    public static Map<String,SpEntity> Cache_splist;
+    public static  Map<String,TypeEntity> Cache_typelist;
+
+    //缓存设备列表
+    //string SerialPort Num ,list devlist
+    public static  Map<String,List<DevEntity>> Cache_devlist;
+    //string devcode ,list devlist
+    public static  Map<String,List<DevEntity>> Cache_all_devlist;
+    //缓存协议列表
+    public static Map<String,ProtocolEntity> Cache_protocollist;
+    //缓存指令列表
+    public static Map<String,List<InstructionEntity>> Cache_instructionlist;
+    //缓存解析
+    public  static Map<String,List<ResultEntity>> Cache_resultlist;
+
 }

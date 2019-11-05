@@ -46,6 +46,8 @@ public class SpConfigActivity extends AppCompatActivity {
     MyDatabaseHelper dbHelper;
     DbDataService dbDataService;
     TextView txtDevDesc;
+    String Default_SerilPort = "SerialPort1";
+    String Default_Pro = "UPS";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +57,17 @@ public class SpConfigActivity extends AppCompatActivity {
         dbHelper = new MyDatabaseHelper(SpConfigActivity.this, 2);
         dbDataService = new DbDataService(dbHelper.getDb());
 
-        btnFinish = (Button) findViewById(R.id.spConfigaAtivity_btn_finish);
+
+        Button btn_Serilport1 = findViewById(R.id.SerilPort1);
+        Button btn_Serilport2 = findViewById(R.id.SerilPort2);
+        Button btn_Serilport3 = findViewById(R.id.SerilPort3);
+        Button btn_Serilport4 = findViewById(R.id.SerilPort4);
+        Button btn_pro_ups = findViewById(R.id.Pro_UPS);
+        Button btn_pro_ac = findViewById(R.id.Pro_AC);
+        Button btn_pro_em = findViewById(R.id.Pro_EM);
+        Button btn_pro_th = findViewById(R.id.Pro_TH);
+
+        btnFinish =  findViewById(R.id.spConfigaAtivity_btn_finish);
         btnAdd = (Button) findViewById(R.id.spConfigaAtivity_btn_addDevice);
         btnDelete = (Button) findViewById(R.id.spConfigaAtivity_btn_deleteDevice);
         spinnerSp = (Spinner) findViewById(R.id.spConfigaAtivity_spinner_sp);
@@ -69,6 +81,64 @@ public class SpConfigActivity extends AppCompatActivity {
         LinearLayoutManager layoutManager2 = new LinearLayoutManager(this);
         rvDev.setLayoutManager(layoutManager);
         rvProtocol.setLayoutManager(layoutManager2);
+
+        //设置默认SerialPort
+        btn_Serilport1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                spinnerSp.setSelection(0);
+                loadDev();
+            }
+        });
+        btn_Serilport2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                spinnerSp.setSelection(1);
+                loadDev();
+            }
+        });
+        btn_Serilport3.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                spinnerSp.setSelection(2);
+                loadDev();
+            }
+        });
+        btn_Serilport4.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                spinnerSp.setSelection(3);
+                loadDev();
+            }
+        });
+         btn_pro_ups.setOnClickListener(new View.OnClickListener() {
+             @Override
+             public void onClick(View view) {
+                 spinnerType.setSelection(0);
+                 loadProtocol();
+             }
+         });
+        btn_pro_ac.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                spinnerType.setSelection(1);
+                loadProtocol();
+            }
+        });
+        btn_pro_em.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                spinnerType.setSelection(2);
+                loadProtocol();
+            }
+        });
+        btn_pro_th.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                spinnerType.setSelection(3);
+                loadProtocol();
+            }
+        });
 
         spinnerSp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -98,9 +168,6 @@ public class SpConfigActivity extends AppCompatActivity {
         btnFinish.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//                List<DevEntity> list = dbDataService.getDev();
-//                Toast.makeText(SpConfigActivity.this, list.size()+"", Toast.LENGTH_SHORT).show();
-//                loadDev();
                 finish();
             }
         });
@@ -197,6 +264,7 @@ public class SpConfigActivity extends AppCompatActivity {
     }
 
     private void loadDev() {
+
         String spCode = spinnerSp.getSelectedItem().toString();
         Log.d(TAG, "~~~"+spCode);
         devlist = new ArrayList<>();
@@ -222,7 +290,7 @@ public class SpConfigActivity extends AppCompatActivity {
                         break;
                     }
                 }
-                String msg = "Device name: "+devEntity.getName()+", serial port number: "+devEntity.getSpNo()+", protocol: "+protocolName;
+                String msg = "设备名称: "+devEntity.getName()+",   SerialPort: "+selectedDeviceCode+", 协议: "+protocolName;
                 txtDevDesc.setText(msg);
             }
         });
@@ -246,6 +314,8 @@ public class SpConfigActivity extends AppCompatActivity {
             @Override
             public void setOnClickItemListener(View view, int position, String key) {
                 selectedProtocolCode = key;
+
+                txtDev.setText(list.get(position).getValue());
             }
         });
         rvProtocol.setAdapter(strSingleAdapter);

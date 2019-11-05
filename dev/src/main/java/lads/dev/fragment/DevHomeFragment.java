@@ -21,6 +21,7 @@ import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -104,70 +105,6 @@ public class DevHomeFragment extends Fragment {
         final RecyclerView recyclerView=(RecyclerView) view.findViewById(R.id.recyclerview_warn);;
 
 
-
-        /*Button btnTest = (Button) view.findViewById(R.id.btnTest);
-        btnTest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dbHelper.getWritableDatabase();
-            }
-        });
-
-        Button btnTest2 = (Button) view.findViewById(R.id.btnTest2);
-        btnTest2.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                SQLiteDatabase db = dbHelper.getWritableDatabase();
-                ContentValues values=new ContentValues();
-                values.put("param_name", "aaa");
-                values.put("param_value", "bbb");
-                db.insert("sys_param", null, values);
-            }
-        });
-
-        Button btnModify = (Button) view.findViewById(R.id.btnModify);
-        btnModify.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                SQLiteDatabase db =dbHelper.getWritableDatabase();
-                ContentValues values=new ContentValues();
-                values.put("price", 1);
-                db.update("Book", values, "id=?", new String[]{"1"});
-                Log.d(TAG, "modify");
-            }
-        });
-
-        Button btnDelete = (Button) view.findViewById(R.id.btnDelete);
-        btnDelete.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                SQLiteDatabase db =dbHelper.getWritableDatabase();
-                db.delete("Book", "id=?", new String[]{"2"});
-                Log.d(TAG, "delete");
-            }
-        });
-
-        Button btnQuery = (Button) view.findViewById(R.id.btnQuery);
-        btnQuery.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                StringBuffer sb = new StringBuffer();
-                SQLiteDatabase db =dbHelper.getWritableDatabase();
-                Cursor cursor = db.query("sys_param", null, null, null, null, null, null);
-                if(cursor.moveToFirst()) {
-                    do {
-                        int id = cursor.getInt(cursor.getColumnIndex("id"));
-                        String param_name = cursor.getString(cursor.getColumnIndex("param_name"));
-                        String param_value = cursor.getString(cursor.getColumnIndex("param_value"));
-                        Log.d(TAG, id+","+param_name+","+param_value);
-                        sb.append(param_name+","+param_value);
-                    } while(cursor.moveToNext());
-                }
-                cursor.close();
-                Toast.makeText(getContext(),sb.toString(), Toast.LENGTH_SHORT).show();
-            }
-        });*/
-
         Spinner spinnerDevType = view.findViewById(R.id.spinnerDevTypeChoose);
         spinnerDevType.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -197,23 +134,22 @@ public class DevHomeFragment extends Fragment {
 
         String str="";
 
-//        TextView txtAC = (TextView) view.findViewById(R.id.txt_acdata_frag_dev_home);
-//        str = "蒸发器温度：30℃"+newLine+"室内温度：20℃"+newLine+"室内湿度：37%";
-//        txtAC.setText(str);
-//
-//        TextView txtEM = (TextView) view.findViewById(R.id.txt_emdata_frag_dev_home);
-//        str="输入电压：180V"+newLine+"输入电流：99A"+newLine+"输入频率：40Hz"+newLine+"有功功率：80kW"+newLine+"无功功率：60kW"+newLine+"功率因素：1";
-//        txtEM.setText(str);
-//
-//        TextView txtIO = (TextView) view.findViewById(R.id.txt_thdata_frag_dev_home);
-//        str="温度1：23℃"+newLine+"湿度1：33.4%"+newLine+"温度2：26℃"+newLine+"湿度2：36%";
-//        txtIO.setText(str);
-//
-//        txtBasicInfo = (TextView) view.findViewById(R.id.txt_ups_basicinfo_fragment_dev_home);
-//        txtBatInfo = (TextView) view.findViewById(R.id.txt_ups_batinfo_fragment_dev_home);
-//        txtIoInfo = (TextView) view.findViewById(R.id.txt_ups_ioinfo_fragment_dev_home);
-//
-//        timer.schedule(task, 1000,1000);
+        TextView txtAC = (TextView) view.findViewById(R.id.txt_acdata_frag_dev_home);
+      str = "蒸发器温度：30℃"+newLine+"室内温度：20℃"+newLine+"室内湿度：37%";
+        txtAC.setText(str);
+        TextView txtEM = (TextView) view.findViewById(R.id.txt_emdata_frag_dev_home);
+       str="输入电压：180V"+newLine+"输入电流：99A"+newLine+"输入频率：40Hz"+newLine+"有功功率：80kW"+newLine+"无功功率：60kW"+newLine+"功率因素：1";
+        txtEM.setText(str);
+
+        TextView txtIO = (TextView) view.findViewById(R.id.txt_thdata_frag_dev_home);
+        str="温度1：23℃"+newLine+"湿度1：33.4%"+newLine+"温度2：26℃"+newLine+"湿度2：36%";
+        txtIO.setText(str);
+
+        txtBasicInfo = (TextView) view.findViewById(R.id.txt_ups_basicinfo_fragment_dev_home);
+        txtBatInfo = (TextView) view.findViewById(R.id.txt_ups_batinfo_fragment_dev_home);
+       txtIoInfo = (TextView) view.findViewById(R.id.txt_ups_ioinfo_fragment_dev_home);
+
+        timer.schedule(task, 1000,1000);
 
         return view;
     }
@@ -238,22 +174,22 @@ public class DevHomeFragment extends Fragment {
             if(dto == null) {
                 dto = new DevUpsDto();
             }
-//            StringBuffer sb = new StringBuffer();
-//            sb.append("UPS名称："+newLine);
-//            sb.append("工作模式："+dto.getQmod()+newLine);
-//            sb.append("相位："+dto.getQmd_pp()+newLine);
-//            txtBasicInfo.setText(sb.toString());
-//            sb = new StringBuffer();
-//            sb.append("电池电压："+dto.getQgs_ss()+"V"+newLine);
-//            sb.append("负电池电压："+dto.getQgs_xx()+"V"+newLine);
-//            sb.append("剩余容量："+dto.getQbv_tt()+"%"+newLine);
-//            txtBatInfo.setText(sb.toString());
-//            sb=new StringBuffer();
-//            sb.append("输入电压："+dto.getQgs_mm()+"V"+newLine);
-//            sb.append("输入频率："+dto.getQgs_hh()+"Hz"+newLine);
-//            sb.append("输出电压："+dto.getQgs_ll()+"V"+newLine);
-//            sb.append("输出频率："+dto.getQgs_nn()+"Hz"+newLine);
-//            txtIoInfo.setText(sb.toString());
+            StringBuffer sb = new StringBuffer();
+            sb.append("UPS名称："+newLine);
+            sb.append("工作模式："+dto.getQmod()+newLine);
+           sb.append("相位："+dto.getQmd_pp()+newLine);
+            txtBasicInfo.setText(sb.toString());
+            sb = new StringBuffer();
+            sb.append("电池电压："+dto.getQgs_ss()+"V"+newLine);
+            sb.append("负电池电压："+dto.getQgs_xx()+"V"+newLine);
+            sb.append("剩余容量："+dto.getQbv_tt()+"%"+newLine);
+            txtBatInfo.setText(sb.toString());
+            sb=new StringBuffer();
+            sb.append("输入电压："+dto.getQgs_mm()+"V"+newLine);
+            sb.append("输入频率："+dto.getQgs_hh()+"Hz"+newLine);
+            sb.append("输出电压："+dto.getQgs_ll()+"V"+newLine);
+            sb.append("输出频率："+dto.getQgs_nn()+"Hz"+newLine);
+            txtIoInfo.setText(sb.toString());
         }
     };
     Timer timer = new Timer();
@@ -269,30 +205,30 @@ public class DevHomeFragment extends Fragment {
     List<String> warninglist = new ArrayList<>();
     private void initWarnings(String type) {
 
-        warninglist.clear();
-//        SQLiteDatabase db = dbHelper.getWritableDatabase();
-//        Cursor cursor = db.query("warning",null,null,null,null,null,null);
-//        if(cursor.moveToFirst()) {
-//            do {
-//                String devType = cursor.getString(cursor.getColumnIndex("dev_type"));
-//                String warnTitle = cursor.getString(cursor.getColumnIndex("warn_title"));
-//                String warnContent = cursor.getString(cursor.getColumnIndex("warn_content"));
-//                String createTime = cursor.getString(cursor.getColumnIndex("create_time"));
-//                if(type.equals("所有")) {
-//                    warninglist.add("["+devType+"] "+warnContent+" "+createTime);
-//                } else if(type.equals(devType)) {
-//                    warninglist.add("["+devType+"] "+warnContent+" "+createTime);
-//                }
-//
-//            } while (cursor.moveToNext());
-//        }
-//        cursor.close();
+       /* warninglist.clear();
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        Cursor cursor = db.query("warning",null,null,null,null,null,null);
+        if(cursor.moveToFirst()) {
+            do {
+                String devType = cursor.getString(cursor.getColumnIndex("dev_type"));
+                String warnTitle = cursor.getString(cursor.getColumnIndex("warn_title"));
+                String warnContent = cursor.getString(cursor.getColumnIndex("warn_content"));
+                String createTime = cursor.getString(cursor.getColumnIndex("create_time"));
+                if(type.equals("所有")) {
+                    warninglist.add("["+devType+"] "+warnContent+" "+createTime);
+                } else if(type.equals(devType)) {
+                    warninglist.add("["+devType+"] "+warnContent+" "+createTime);
+                }
 
-//        SimpleDateFormat sdf= new SimpleDateFormat("yyyyMMddHHmmssSSS");
-//        for(int i=0;i<20;i++) {
-//            Date now = new Date();
-//            warninglist.add(sdf.format(now)+"反反复复付付付付付付付付付付付付付付付付付付");
-//        }
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+
+        SimpleDateFormat sdf= new SimpleDateFormat("yyyyMMddHHmmssSSS");
+       for(int i=0;i<20;i++) {
+            //Date now = new Date();
+            warninglist.add(sdf.format(new Date().toString())+"反反复复付付付付付付付付付付付付付付付付付付");
+        }*/
     }
 
     // TODO: Rename method, update argument and hook method into UI event

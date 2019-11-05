@@ -206,7 +206,7 @@ public class SerialPortUtils {
         }
     }
 
-    public void sendData(byte[] data, int step, String readType) {
+    /*public void sendData(byte[] data, int step, String readType) {
 
 
 
@@ -224,10 +224,10 @@ public class SerialPortUtils {
             Log.e(TAG, "~~~send data error," + e.getStackTrace());
         }
     }
+*/
+    //SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-    public int recvData() {
+    /*public int recvData() {
         Log.d(TAG,"2.1 ===recvData start,"+new Date().toString());
         byte[] buffer = new byte[512];
         byte[] tmp = new byte[64];
@@ -247,14 +247,14 @@ public class SerialPortUtils {
                     }
                 }
 
-                /*
+                *//*
                  try {
                 Thread.sleep(3000);
             } catch (Exception e){
                 Log.e(TAG, "~~~receive data error," + e.getStackTrace());
             }
                 size = 10;
-                totalCount = 10;*/
+                totalCount = 10;*//*
                 Log.v(TAG,"2.2 ===recvData ;readType"+readType);
             } else if(readType.equals(RuleEnum.ReadType.MODBUS.toString())) {
                 size = inputStream.read(tmp);
@@ -289,9 +289,9 @@ public class SerialPortUtils {
         int rets = totalCount;
         return totalCount;
 
-    }
+    }*/
 
-    public int recvDataWithOvertime() {
+    /*public int recvDataWithOvertime() {
         int ret = 0;
         ExecutorService executorService = Executors.newFixedThreadPool(1);
         Callable<Integer> readTask = new Callable<Integer>() {
@@ -331,11 +331,11 @@ public class SerialPortUtils {
             return ret;
         }
     }
-
+*/
     /**
      * 单开一线程，来读数据
      */
-    private class ReadThread extends Thread{
+    /*private class ReadThread extends Thread{
         @Override
         public void run() {
             super.run();
@@ -387,7 +387,7 @@ public class SerialPortUtils {
 
         }
     }
-
+*/
     public OnDataReceiveListener onDataReceiveListener = null;
     public static interface OnDataReceiveListener {
         public void onDataReceive(byte[] buffer, int size, int ste);
