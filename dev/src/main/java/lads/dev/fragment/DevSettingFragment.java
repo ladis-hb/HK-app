@@ -2,66 +2,53 @@ package lads.dev.fragment;
 
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.support.v4.app.Fragment;
-import android.text.Layout;
-import android.util.AndroidException;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.Toast;
 
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URI;
-import java.security.cert.TrustAnchor;
-import java.text.SimpleDateFormat;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.stream.Collectors;
 
 import com.example.x6.serial.SerialPort;
+import com.github.nkzawa.emitter.Emitter;
+import com.github.nkzawa.socketio.client.IO;
+import com.github.nkzawa.socketio.client.Socket;
+
 import lads.dev.R;
 import lads.dev.activity.SpConfigActivity;
 import lads.dev.activity.TestActivity;
 import lads.dev.biz.DbDataService;
 import lads.dev.biz.DevBizHandler;
 import lads.dev.biz.LocalData;
-import lads.dev.biz.RuleEnum;
-import lads.dev.biz.TestDevBizHandler;
-import lads.dev.biz.UpsBizHandler;
 import lads.dev.entity.DataHisEntity;
 import lads.dev.entity.DevEntity;
-import lads.dev.entity.DevOptEntity;
-import lads.dev.entity.DevOptHisEntity;
-import lads.dev.entity.ProtocolEntity;
+import lads.dev.entity.FieldDisplayEntity;
+import lads.dev.entity.InstructionEntity;
+import lads.dev.entity.ResultEntity;
 import lads.dev.entity.SpEntity;
-import lads.dev.entity.SysParamEntity;
-import lads.dev.entity.TypeEntity;
 import lads.dev.entity.ViewEntity;
-import lads.dev.utils.ChangeTool;
 import lads.dev.utils.HttpUtil;
 import lads.dev.utils.MyDatabaseHelper;
 import lads.dev.utils.MyUtil;
-import lads.dev.utils.MyWebSocketClient;
 import lads.dev.utils.SerialPortUtils;
 
 /**
@@ -125,10 +112,9 @@ public class DevSettingFragment extends Fragment {
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
     }
-    EditText txtBaudrate1,txtBaudrate2,txtBaudrate3,txtBaudrate4,txtSql,txtUrl,txtWebsocket;
-    Button btnSave1,btnSave2,btnSave3,btnSave4,btnOpenPort1,btnOpenPort2,btnOpenPort3,btnOpenPort4,btnSql,btnUrl,btnConfig,btnTest ,btn_all_start;
+    EditText txtBaudrate1,txtBaudrate2,txtBaudrate3,txtBaudrate4,txtUrl,txtWebsocket,editText_wait_ups,editText_wait_query;
+    Button btnSave1,btnSave2,btnSave3,btnSave4,btnOpenPort1,btnOpenPort2,btnOpenPort3,btnOpenPort4,btnUrl,btnConfig,btnTest ,btn_all_start,btn_wait_query;
     public static DevBizHandler devBizHandler1,devBizHandler2,devBizHandler3,devBizHandler4;
-    //String strProtocol1,strProtocol2,strProtocol3,strProtocol4,strType1,strType2,strType3,strType4;
     SerialPort serialPort1,serialPort2,serialPort3,serialPort4 ;
     SerialPortUtils serialPortUtils1,serialPortUtils2,serialPortUtils3,serialPortUtils4;
     private int baudrate1,baudrate2,baudrate3,baudrate4;
@@ -153,8 +139,7 @@ public class DevSettingFragment extends Fragment {
         btnOpenPort2 = (Button) view.findViewById(R.id.devSettingFragment_btn_open2);
         btnOpenPort3 = (Button) view.findViewById(R.id.devSettingFragment_btn_open3);
         btnOpenPort4 = (Button) view.findViewById(R.id.devSettingFragment_btn_open4);
-        //sql按钮
-        btnSql = (Button) view.findViewById(R.id.btn111);
+
         //http保存按钮
         btnUrl = (Button) view.findViewById(R.id.btnUrl);
         //串口配置按钮
@@ -164,16 +149,17 @@ public class DevSettingFragment extends Fragment {
         //一键载入数据打开所有端口
         btn_all_start = view.findViewById(R.id.btn_all_start);
 
-        txtSql = (EditText) view.findViewById(R.id.txt_sql_fragment_dev_setting);
         txtUrl = (EditText) view.findViewById(R.id.txtUrl);
         txtWebsocket = (EditText) view.findViewById(R.id.txtWebsocket);
         cbx = view.findViewById(R.id.frag_setting_cbx_connect);
 
-
+        //超时
+        editText_wait_ups = view.findViewById(R.id.editText_wait_ups);
+        editText_wait_query = view.findViewById(R.id.editText_wait_query);
+        btn_wait_query = view.findViewById(R.id.btn_wait_query);
 
         dbHelper = new MyDatabaseHelper(getContext(), 2);
         dbDataService = new DbDataService(dbHelper.getDb());
-
 
         //初始化数据库
         Button btnInitData = (Button) view.findViewById(R.id.btn_initdata_fragment_dev_setting);
@@ -185,14 +171,6 @@ public class DevSettingFragment extends Fragment {
                 dbDataService = new DbDataService(dbHelper.getDb());
                 dbDataService.initData();
                 Toast.makeText(getContext(), "Init data finish", Toast.LENGTH_SHORT).show();
-/*
-                try {
-                    dbDataService.initContextData();
-                    loaddata();
-                    Toast.makeText(getContext(), "Refresh data finish", Toast.LENGTH_SHORT).show();
-                } catch (Exception e) {
-                    Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
-                }*/
             }
         });
         //载入数据库
@@ -226,8 +204,88 @@ public class DevSettingFragment extends Fragment {
             }
         });
 
-        //保存波特率配置
+        //保存网络配置
+        btnUrl.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String strUrl = txtUrl.getText().toString().trim();
+                String strWebsocket = txtWebsocket.getText().toString().trim();
+                if(MyUtil.isStringEmpty(strUrl) || MyUtil.isStringEmpty(strWebsocket)) {
+                    Toast.makeText(getContext(), "url and uri required", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if(btnUrl.getText().toString().toUpperCase().equals("SAVE")) {
+                    btnUrl.setText("modify");
+                    txtUrl.setEnabled(false);
+                    txtWebsocket.setEnabled(false);
+                    dbDataService.updateParamValue("http_uri", strUrl);
+                    dbDataService.updateParamValue("websocket_uri", strWebsocket);
+                } else {
+                    btnUrl.setText("save");
+                    txtUrl.setEnabled(true);
+                    txtWebsocket.setEnabled(true);
+                }
+            }
+        });
+        //打开socket
+        cbx.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if(b) {
+                    String strUrl = txtUrl.getText().toString();
+                    if(!MyUtil.isStringEmpty(strUrl)) {
+                        //device设备上传地址/api/dev
+                        LocalData.url = strUrl+"/dev";
+                    }
+                    String s = txtWebsocket.getText().toString().trim();
+                    if(!MyUtil.isStringEmpty(s)) {
+                        URI uri = URI.create(s);
+                        initMyWebsocket(uri);
+                    }
+                }
+            }
+        });
+        //保存超时
+        btn_wait_query.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    int wait_ups = Integer.parseInt(editText_wait_ups.getText().toString());
+                    int wait_query = Integer.parseInt(editText_wait_query.getText().toString());
+                    if(wait_ups < 500){
+                        Toast.makeText(getContext(),"ups查询最小设置400",Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    if(wait_query < 5000){
+                        Toast.makeText(getContext(),"主查询最小设置值5000,建议值10000",Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    dbDataService.updateParamValue("main_query", String.valueOf(wait_query));
+                    dbDataService.updateParamValue("handle_wait_slim", String.valueOf(wait_ups));
+                    Toast.makeText(getContext(),"Save Success",Toast.LENGTH_LONG).show();
 
+
+                }catch (Exception e){
+                    Log.e(TAG,e.getMessage());
+                }
+
+            }
+        });
+        //打开串口配置
+        btnConfig.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(getActivity().getApplicationContext(), SpConfigActivity.class));
+            }
+        });
+        //打开测试页面
+        btnTest.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(getContext().getApplicationContext(), TestActivity.class));
+            }
+        });
+        //保存波特率配置
         btnSave1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -287,11 +345,9 @@ public class DevSettingFragment extends Fragment {
                 }
                 if(btnOpenPort1.getText().toString().equals("打开端口")) {
                     btnOpenPort1.setText(R.string.Close);
-                    //runflag1=true;
                     devBizHandler1.setFlagSpRun(true);
                 } else {
                     btnOpenPort1.setText(R.string.OPEN);
-                    //runflag1=false;
                     devBizHandler1.setFlagSpRun(false);
                 }
             }
@@ -323,11 +379,9 @@ public class DevSettingFragment extends Fragment {
                 }
                 if(btnOpenPort2.getText().toString().equals("打开端口")) {
                     btnOpenPort2.setText(R.string.Close);
-                    //runflag2=true;
                     devBizHandler2.setFlagSpRun(true);
                 } else {
                     btnOpenPort2.setText(R.string.OPEN);
-                    //runflag2=false;
                     devBizHandler2.setFlagSpRun(false);
                 }
             }
@@ -398,117 +452,9 @@ public class DevSettingFragment extends Fragment {
                 }
             }
         });
-
-
-        btnSql.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                try{
-                    JSONObject json = new JSONObject();
-                    json.put("name", "zhangsan");
-                    json.put("age", "18");
-                    Log.d("TEST", json.toString());
-                } catch (Exception e) {
-
-                }
-
-                Cursor query;
-                String str = txtSql.getText().toString();
-                String[] arr = str.replace("\r", "").replace("\n", "").split(";");
-                try {
-                    for(String s : arr) {
-                        if(s.equals("")) {
-                            continue;
-                        } else if (s.contains("select") || s.contains("SELECT")) {
-                           query = dbHelper.getDb().rawQuery(s, null);
-                           //query.ge
-                        } else {
-                           dbHelper.getDb().execSQL(s);
-                        }
-                    }
-                    Toast.makeText(getContext(), "exec sql finish", Toast.LENGTH_SHORT).show();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-        btnUrl.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String strUrl = txtUrl.getText().toString().trim();
-                String strWebsocket = txtWebsocket.getText().toString().trim();
-                if(MyUtil.isStringEmpty(strUrl) || MyUtil.isStringEmpty(strWebsocket)) {
-                    Toast.makeText(getContext(), "url and uri required", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                if(btnUrl.getText().toString().toUpperCase().equals("SAVE")) {
-                    btnUrl.setText("modify");
-                    txtUrl.setEnabled(false);
-                    txtWebsocket.setEnabled(false);
-                    dbDataService.updateParamValue("http_uri", strUrl);
-                    dbDataService.updateParamValue("websocket_uri", strWebsocket);
-                } else {
-                    btnUrl.setText("save");
-                    txtUrl.setEnabled(true);
-                    txtWebsocket.setEnabled(true);
-                }
-            }
-        });
-
-        cbx.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                if(b) {
-                    String strUrl = txtUrl.getText().toString();
-                    if(!MyUtil.isStringEmpty(strUrl)) {
-                        LocalData.url = strUrl;
-                    }
-                    String s = txtWebsocket.getText().toString().trim();
-                    if(!MyUtil.isStringEmpty(s)) {
-                        URI uri = URI.create(s);
-                        initMyWebsocket(uri);
-                    }
-                }
-            }
-        });
-
-       /* EditText txt1 = (EditText) view.findViewById(R.id.txtTest_setting);
-        Button btn1 = (Button) view.findViewById(R.id.btnTest_setting);
-        btn1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    String str = txt1.getText().toString();
-                    byte[] bytes = ChangeTool.HexToByteArr(str);
-                    TestDevBizHandler testDevBizHandler = new TestDevBizHandler("ups_ladis_01", getContext(), "devname111", "ups");
-                    testDevBizHandler.onDataReceive(bytes, bytes.length, 2);
-                } catch (Exception e) {
-                    Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        });*/
-
-        btnConfig.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(new Intent(getActivity().getApplicationContext(), SpConfigActivity.class));
-            }
-        });
-
-        btnTest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(getContext().getApplicationContext(), TestActivity.class));
-            }
-        });
-
-        handlerData.postDelayed(runnableData, 60);
-        //timer 10min, send http and save data
-
-        //timer.schedule(task, 1000,5000);
-
+        //定时发送http
+        handlerData.postDelayed(runnableData, 1000*60);
+        //初始化查询
         serialPortUtils1 = new SerialPortUtils();
         devBizHandler1 = new DevBizHandler(getContext(), serialPortUtils1,"1" );
         new Thread(devBizHandler1).start();
@@ -524,18 +470,49 @@ public class DevSettingFragment extends Fragment {
 
         return view;
     }
-
-    MyWebSocketClient client = null;
+    //Socket解析器
+    private Emitter.Listener onNewMessage = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject data = (JSONObject) args[0];
+                    Log.d(TAG,data.toString());
+                }
+            });
+        }
+    };
+    //初始化socket，注册app，监听服务器操作
     private void initMyWebsocket(URI uri) {
         Log.d(TAG,"初始化socket连接");
-        if(client == null) {
-            client = new MyWebSocketClient(uri) {
+        Socket mSocket;
+        try {
+            //获取socket实例
+            mSocket = IO.socket(uri.toString());
+            //连接socket服务器
+            mSocket.connect();
+            //构造注册信息
+            JSONObject register = new JSONObject();
+            register.put("user","mac001");
+            //触发注册
+            mSocket.emit("AppRegister",register);
+            //注册监听
+            mSocket.on("operate",onNewMessage);
+
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        /*MyWebSocketClient client = new MyWebSocketClient(uri) {
                 @Override
                 public void onMessage(String message) {
                     Log.d(TAG,"初始化socket onMessage 监听");
-                    /**
+                    *//**
                      * 命令格式：{DeviceCode:"xxxx",OptCode:"StartUps",OptType:"operate/query"}
-                     */
+                     *//*
                     try {
                         JSONObject json = new JSONObject(message);
                         String devCode = json.getString("DeviceCode");
@@ -576,33 +553,28 @@ public class DevSettingFragment extends Fragment {
                             devOptHisEntity.setDevName(devName);
                             devOptHisEntity.setOptName(optName);
                             devOptHisEntity.setOptValue(optValue);
-                            if(spNo.equals("1")) {
-                                devBizHandler1.addDevOpt(devOptHisEntity);
-                            } else if(spNo.equals("2")) {
-                                devBizHandler2.addDevOpt(devOptHisEntity);
-                            } else if(spNo.equals("3")) {
-                                devBizHandler3.addDevOpt(devOptHisEntity);
-
-                            } else if(spNo.equals("4")) {
-                                devBizHandler4.addDevOpt(devOptHisEntity);
+                            switch (spNo){
+                                case "1":
+                                    devBizHandler1.addDevOpt(devOptHisEntity);
+                                    break;
+                                case "2":
+                                    devBizHandler2.addDevOpt(devOptHisEntity);
+                                    break;
+                                case "3":
+                                    devBizHandler3.addDevOpt(devOptHisEntity);
+                                    break;
+                                case "4":
+                                    devBizHandler4.addDevOpt(devOptHisEntity);
+                                    break;
                             }
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
-            };
-        }
+            };*/
     }
 
-    Timer timer = new Timer();
-    TimerTask task = new TimerTask() {
-        public void run() {
-            Message message = new Message();
-            message.what = 1;
-            handler.sendMessage(message);
-        }
-    };
 
     //send http data and save device data
     Handler handlerData = new Handler();
@@ -610,28 +582,51 @@ public class DevSettingFragment extends Fragment {
         @Override
         public void run() {
             Log.d(TAG,"~~~~~~~~~~~~~~~");
-            for(String key : LocalData.devDataMap.keySet()) {
-                String deviceCode = key;
-                Map<String,ViewEntity> map1 = LocalData.devDataMap.get(deviceCode);
-                DevEntity devEntity = null;
-                for(DevEntity e : LocalData.devlist) {
-                    if(e.getCode().equals(deviceCode)) {
-                        devEntity = e;
-                        break;
+            for(String deviceCode : LocalData.devDataMap.keySet()) {
+                //get 设备信息
+                DevEntity devEntity = LocalData.Cache_all_devlist.get(deviceCode);
+                //查看是否是注册设备
+                if(devEntity == null) return;
+                //获取设备result协议列表
+                String protocolCode = devEntity.getProtocolCode();
+                //获取inst列表，协议-协议子集
+                List<String> instructionList = new ArrayList<>();
+                for(InstructionEntity instructionEntity:LocalData.Cache_instructionlist.get(protocolCode)){
+                    instructionList.add(instructionEntity.getCode());
+                }
+                Map<String,String> resultList = new HashMap<>();
+                for(String string:instructionList){
+                    for( ResultEntity resultEntity :LocalData.Cache_resultlist.get(string)){
+                        resultList.put(resultEntity.getFieldName(),resultEntity.getDisplayName());
                     }
                 }
-                if(devEntity == null) {
-                    continue;
+                //获取fielddisplay
+                Map<String,String> fieldDisplayList = new HashMap<>();
+                for (FieldDisplayEntity fieldDisplayEntity:LocalData.Cache_fieldDisplaylist.get(protocolCode)){
+                    fieldDisplayList.put(fieldDisplayEntity.getDisplayName(),fieldDisplayEntity.getFieldName());
                 }
+                //读取设备数据
+                Map<String,ViewEntity> map = LocalData.devDataMap.get(deviceCode);
+
+
                 try {
-                    //send http
-                    JSONObject json = new JSONObject();
-                    for(String key2 : map1.keySet()) {
-                        ViewEntity entity = map1.get(key2);
-                        json.put(key2, entity.getValue());
+
+                    JSONObject data = new JSONObject();
+                    for(String key : map.keySet()) {
+                        data.put(resultList.get(fieldDisplayList.get(key)), map.get(key).getValue());
                     }
-                    if(!MyUtil.isStringEmpty(LocalData.url)) {
-                        HttpUtil.httpPost(LocalData.url, json.toString());
+                    //组装body
+                    JSONObject Body = new JSONObject();
+                    Body.put("deviceCode",deviceCode);
+                    Body.put("date",new Date().toString());
+                    Body.put("data",data);
+                    Body.put("devType",LocalData.Cache_all_devlist.get(deviceCode).getTypeCode());
+                    Body.put("name",LocalData.Cache_all_devlist.get(deviceCode).getName());
+                    //获取Url
+                    String uri = LocalData.Cache_sysparamlist.get("http_uri").getParamValue();
+                    //send http
+                    if(!MyUtil.isStringEmpty(uri)) {
+                        HttpUtil.httpPost(uri+"/dev", Body.toString());
                     }
 
                     //save data
@@ -639,15 +634,14 @@ public class DevSettingFragment extends Fragment {
                     dataHisEntity.setDevCode(deviceCode);
                     dataHisEntity.setDevName(devEntity.getName());
                     dataHisEntity.setSpCode(devEntity.getSpCode());
-                    dataHisEntity.setMsg(json.toString());
+                    dataHisEntity.setMsg(data.toString());
                     dataHisEntity.setCreateTime(new Date());
                     dbDataService.addDataHis(dataHisEntity);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
             }
-            handlerData.postDelayed(this, 10*60*1000);
+           // handlerData.postDelayed(this, 20000);
         }
     };
 
@@ -660,7 +654,7 @@ public class DevSettingFragment extends Fragment {
                 json.put(key2, entity.getValue());
             }
             if(!MyUtil.isStringEmpty(LocalData.url)) {
-                HttpUtil.httpPost(LocalData.url, json.toString());
+                //HttpUtil.httpPost(LocalData.url, json.toString());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -689,20 +683,14 @@ public class DevSettingFragment extends Fragment {
                     break;
             }
         }
-        for(SysParamEntity entity : LocalData.sysparamlist) {
-            switch (entity.getParamName()){
-                case "http_uri":
-                    txtUrl.setText(entity.getParamValue());
-                    break;
-                case "websocket_uri":
-                    txtWebsocket.setText(entity.getParamValue());
-                    break;
-            }
+        txtUrl.setText(LocalData.Cache_sysparamlist.get("http_uri").getParamValue());
+        txtWebsocket.setText(LocalData.Cache_sysparamlist.get("websocket_uri").getParamValue());
+        editText_wait_ups.setText(LocalData.Cache_sysparamlist.get("handle_wait_slim").getParamValue());
+        editText_wait_query.setText(LocalData.Cache_sysparamlist.get("main_query").getParamValue());
 
-        }
     }
     //保存Baudrate
-    public void SaveBaudrate(String strBaudrate,int seq){
+   public void SaveBaudrate(String strBaudrate,int seq){
         try {
             baudrate1 = Integer.parseInt(strBaudrate);
 
@@ -713,6 +701,7 @@ public class DevSettingFragment extends Fragment {
         dbDataService.updateBaudrate(baudrate1, seq);
         Toast.makeText(getContext(), "Succeed", Toast.LENGTH_SHORT).show();
     }
+/*
 
 
     boolean runflag1 = false;
@@ -780,6 +769,7 @@ public class DevSettingFragment extends Fragment {
         }
     };
 
+*/
 
 
 

@@ -131,25 +131,27 @@ public class DbDataService {
 
     public List<DevEntity> getDev() {
         Map<String,List<DevEntity>> Cache_devlist = new HashMap<>();
-        Map<String,List<DevEntity>> Cache_all_devlist = new HashMap<>();
+        Map<String,DevEntity> Cache_all_devlist = new HashMap<>();
 
         List<DevEntity> list = new ArrayList<>();
         Cursor cursor = db.rawQuery("select * from dev order by sp_code,seq", null);
         if(cursor.moveToFirst()) {
             do{
                 String spNo = cursor.getString(cursor.getColumnIndex("sp_no"));
+                String code =cursor.getString(cursor.getColumnIndex("code"));
                 DevEntity entity = new DevEntity();
                 entity.setId(cursor.getInt(cursor.getColumnIndex("id")));
                 entity.setTypeCode(cursor.getString(cursor.getColumnIndex("type_code")));
                 entity.setProtocolCode(cursor.getString(cursor.getColumnIndex("protocol_code")));
                 entity.setName(cursor.getString(cursor.getColumnIndex("name")));
-                entity.setCode(cursor.getString(cursor.getColumnIndex("code")));
+                entity.setCode(code);
                 entity.setSpNo(spNo);
                 entity.setSpCode(cursor.getString(cursor.getColumnIndex("sp_code")));
                 entity.setOnlineFlag(cursor.getString(cursor.getColumnIndex("online_flag")));
                 entity.setSeq(cursor.getInt(cursor.getColumnIndex("seq")));
                 entity.setLostTimes(0);
                 list.add(entity);
+
                 if(Cache_devlist.containsKey(spNo)){
                     Cache_devlist.get(spNo).add(entity);
                 }else {
@@ -158,11 +160,14 @@ public class DbDataService {
                     Cache_devlist.put(spNo,li);
                 }
                 //
+                Cache_all_devlist.put(code,entity);
+
 
             } while (cursor.moveToNext());
         }
         LocalData.devlist = list;
         LocalData.Cache_devlist = Cache_devlist;
+        LocalData.Cache_all_devlist = Cache_all_devlist;
         return list;
     }
 
@@ -300,22 +305,41 @@ public class DbDataService {
     }
 
     public List<FieldDisplayEntity> getFieldDisplay() {
+        Map<String,List<FieldDisplayEntity>> Cache_fieldDisplaylist = new HashMap<>();
+        Map<String,FieldDisplayEntity> Cache_all_fieldDisplaylist = new HashMap<>();
         List<FieldDisplayEntity> list = new ArrayList<>();
         Cursor cursor = db.rawQuery("select * from field_display order by seq", null);
         if(cursor.moveToFirst()) {
             do{
+                String protocol_code = cursor.getString(cursor.getColumnIndex("protocol_code"));
+                String field_name = cursor.getString(cursor.getColumnIndex("field_name"));
+
                 FieldDisplayEntity entity = new FieldDisplayEntity();
                 entity.setId(cursor.getInt(cursor.getColumnIndex("id")));
-                entity.setProtocolCode(cursor.getString(cursor.getColumnIndex("protocol_code")));
-                entity.setFieldName(cursor.getString(cursor.getColumnIndex("field_name")));
+                entity.setProtocolCode(protocol_code);
+                entity.setFieldName(field_name);
                 entity.setDisplayName(cursor.getString(cursor.getColumnIndex("display_name")));
                 entity.setColumnIndex(cursor.getInt(cursor.getColumnIndex("column_index")));
                 entity.setSeq(cursor.getInt(cursor.getColumnIndex("seq")));
                 list.add(entity);
+                //
+                Cache_all_fieldDisplaylist.put(protocol_code+field_name,entity);
+                //
+                if(Cache_fieldDisplaylist.containsKey(protocol_code)){
+                    Cache_fieldDisplaylist.get(protocol_code).add(entity);
+                }else {
+                    List<FieldDisplayEntity> li = new ArrayList<>();
+                    li.add(entity);
+                    Cache_fieldDisplaylist.put(protocol_code,li);
+                }
+
+
             } while (cursor.moveToNext());
         }
         cursor.close();
         LocalData.fieldDisplaylist = list;
+        LocalData.Cache_fieldDisplaylist = Cache_fieldDisplaylist;
+        LocalData.Cache_all_fieldDisplaylist = Cache_all_fieldDisplaylist;
         return list;
     }
 
@@ -326,6 +350,8 @@ public class DbDataService {
             do{
                 WarnCfgEntity entity = new WarnCfgEntity();
                 entity.setId(cursor.getInt(cursor.getColumnIndex("id")));
+                entity.setInstructionCode(cursor.getString(cursor.getColumnIndex("instruction_code")));
+                entity.setFieldName(cursor.getString(cursor.getColumnIndex("field_name")));
                 entity.setStartAddr(cursor.getInt(cursor.getColumnIndex("start_addr")));
                 entity.setLen(cursor.getInt(cursor.getColumnIndex("len")));
                 entity.setWarnEnum(cursor.getString(cursor.getColumnIndex("warn_enum")));
@@ -391,19 +417,25 @@ public class DbDataService {
     }
 
     public List<SysParamEntity> getSysParam() {
+        Map<String,SysParamEntity> Cache_sysparamlist = new HashMap<>();
         List<SysParamEntity> list = new ArrayList<>();
         Cursor cursor = db.rawQuery("select * from sys_param", null);
         if(cursor.moveToFirst()) {
             do{
+                String param_name = cursor.getString(cursor.getColumnIndex("param_name"));
+                String param_value = cursor.getString(cursor.getColumnIndex("param_value"));
+
                 SysParamEntity entity = new SysParamEntity();
                 entity.setId(cursor.getInt(cursor.getColumnIndex("id")));
-                entity.setParamName(cursor.getString(cursor.getColumnIndex("param_name")));
-                entity.setParamValue(cursor.getString(cursor.getColumnIndex("param_value")));
+                entity.setParamName(param_name);
+                entity.setParamValue(param_value);
                 list.add(entity);
+                Cache_sysparamlist.put(param_name,entity);
             } while (cursor.moveToNext());
         }
         cursor.close();
         LocalData.sysparamlist = list;
+        LocalData.Cache_sysparamlist = Cache_sysparamlist;
         return list;
     }
 
@@ -742,7 +774,8 @@ public class DbDataService {
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qmd_mm','Nominal I/P Voltage',2,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qmd_nn','Nominal O/P Voltage',2,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qmd_rr','电池片数量',2,1)");
-
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qmd_bb','每单位电池标准电压',2,1)");
+        db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qmd_pp','相位',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qmod','Ups Mode',1,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qgs_mm','输入电压',3,1)");
         db.execSQL("insert into field_display(protocol_code,field_name,display_name,column_index,seq) values('ups_ladis_01','qgs_hh','输入频率',3,1)");
@@ -833,8 +866,10 @@ public class DbDataService {
         db.execSQL("insert into dev_opt(protocol_code,opt_code,opt_name,opt_value) values('ups_ladis_01','ShutdownUps','关闭UPS','534f46460d0a')");
 
         //sys_param
-        db.execSQL("insert into sys_param(param_name,param_value) values('http_uri','http://116.62.48.175:81')");
-        db.execSQL("insert into sys_param(param_name,param_value) values('websocket_uri','http://116.62.48.175:81')");
+        db.execSQL("insert into sys_param(param_name,param_value) values('http_uri','http://192.168.1.119:81/Api')");
+        db.execSQL("insert into sys_param(param_name,param_value) values('websocket_uri','http://192.168.1.119:81')");
+        db.execSQL("insert into sys_param(param_name,param_value) values('main_query','10000')");
+        db.execSQL("insert into sys_param(param_name,param_value) values('handle_wait_slim','500')");
 
     }
 

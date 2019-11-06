@@ -41,12 +41,18 @@ public class LocalData {
     //string SerialPort Num ,list devlist
     public static  Map<String,List<DevEntity>> Cache_devlist;
     //string devcode ,list devlist
-    public static  Map<String,List<DevEntity>> Cache_all_devlist;
+    public static  Map<String,DevEntity> Cache_all_devlist;
     //缓存协议列表
     public static Map<String,ProtocolEntity> Cache_protocollist;
     //缓存指令列表
     public static Map<String,List<InstructionEntity>> Cache_instructionlist;
     //缓存解析
     public  static Map<String,List<ResultEntity>> Cache_resultlist;
+    //缓存显示的数据
+    public static Map<String,List<FieldDisplayEntity>> Cache_fieldDisplaylist;
+    //缓存显示的数据
+    public static Map<String,FieldDisplayEntity> Cache_all_fieldDisplaylist;
+    //缓存sys配置
+    public static  Map<String,SysParamEntity> Cache_sysparamlist;
 
 }

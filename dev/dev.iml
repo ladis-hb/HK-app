@@ -4,8 +4,8 @@
     <facet type="android-gradle" name="Android-Gradle">
       <configuration>
         <option name="GRADLE_PROJECT_PATH" value=":dev" />
-        <option name="LAST_SUCCESSFUL_SYNC_AGP_VERSION" value="3.5.1" />
-        <option name="LAST_KNOWN_AGP_VERSION" value="3.5.1" />
+        <option name="LAST_SUCCESSFUL_SYNC_AGP_VERSION" value="3.5.2" />
+        <option name="LAST_KNOWN_AGP_VERSION" value="3.5.2" />
       </configuration>
     </facet>
     <facet type="android" name="Android">
@@ -106,10 +106,15 @@
     <orderEntry type="library" name="Gradle: android.arch.lifecycle:common:1.1.0@jar" level="project" />
     <orderEntry type="library" name="Gradle: android.arch.core:common:1.1.0@jar" level="project" />
     <orderEntry type="library" name="Gradle: com.android.support.constraint:constraint-layout-solver:1.1.3@jar" level="project" />
-    <orderEntry type="library" name="Gradle: com.squareup.okhttp3:okhttp:3.4.1@jar" level="project" />
-    <orderEntry type="library" name="Gradle: com.squareup.okio:okio:1.9.0@jar" level="project" />
+    <orderEntry type="library" name="Gradle: com.squareup.okhttp3:okhttp:3.8.1@jar" level="project" />
+    <orderEntry type="library" name="Gradle: com.github.nkzawa:socket.io-client:0.6.0@jar" level="project" />
+    <orderEntry type="library" name="Gradle: com.github.nkzawa:engine.io-client:0.6.0@jar" level="project" />
+    <orderEntry type="library" name="Gradle: com.squareup.okhttp:okhttp-ws:2.4.0@jar" level="project" />
+    <orderEntry type="library" name="Gradle: com.squareup.okhttp:okhttp:2.4.0@jar" level="project" />
+    <orderEntry type="library" name="Gradle: com.squareup.okio:okio:1.13.0@jar" level="project" />
     <orderEntry type="library" name="Gradle: org.java-websocket:Java-WebSocket:1.4.0@jar" level="project" />
     <orderEntry type="library" name="Gradle: org.slf4j:slf4j-api:1.7.25@jar" level="project" />
+    <orderEntry type="library" name="Gradle: org.json:json:20090211@jar" level="project" />
     <orderEntry type="library" name="Gradle: com.android.support:appcompat-v7:27.1.1@aar" level="project" />
     <orderEntry type="library" name="Gradle: com.android.support:recyclerview-v7:27.1.1@aar" level="project" />
     <orderEntry type="library" name="Gradle: com.android.support:support-v4:27.1.1@aar" level="project" />

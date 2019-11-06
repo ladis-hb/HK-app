@@ -15,9 +15,11 @@ import okhttp3.Response;
 public class HttpUtil {
 
     private static String TAG="HttpUtil";
+    public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+    public static OkHttpClient client = new OkHttpClient();
 
     public static void httpGet(String urlStr) {
-        OkHttpClient client = new OkHttpClient();
+
         Request request = new Request.Builder()
                 .url(urlStr)
                 .build();
@@ -34,7 +36,9 @@ public class HttpUtil {
         });
     }
 
+
     public static void httpPost(String urlStr, String jsonStr) {
+        Log.d(TAG,"上传数据到云"+urlStr+ jsonStr);
         OkHttpClient client = new OkHttpClient();
         MediaType JSON = MediaType.parse("application/json; charset=utf-8");
         //jsonStr = "{\"username\":\"lisi\",\"nickname\":\"李四\"}";

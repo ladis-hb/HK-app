@@ -55,8 +55,10 @@ public class DevBizHandler implements Runnable  {
     List<LastWarnValueEntity> lastWarnValueList;
     //
     List<DevOptHisEntity> devOptList = new ArrayList<>();
-    //每个查询线程等待秒数，查询过快容易丢失返回数据
-    int handle_wait_slim = 1500;
+    //每个串口执行查询的间隔，默认为10秒
+    int main_query = LocalData.Cache_sysparamlist.containsKey("main_query")?Integer.parseInt(LocalData.Cache_sysparamlist.get("main_query").getParamValue()):10000;
+    //每个查询线程等待秒数，查询过快容易丢失返回数据,测试最低400，默认为500
+    int handle_wait_slim = LocalData.Cache_sysparamlist.containsKey("handle_wait_slim")?Integer.parseInt(LocalData.Cache_sysparamlist.get("handle_wait_slim").getParamValue()):500;
 
     /**
      * synchronize timer reading task and device operating task
@@ -73,130 +75,6 @@ public class DevBizHandler implements Runnable  {
         dbHelper = new MyDatabaseHelper(ctx, 2);
         dataService = new DbDataService(dbHelper.getDb());
         spCode = LocalData.Cache_splist.get(spNo).getCode();
-/*
-        List<SpEntity> spEntityList = LocalData.splist;
-        for(SpEntity spEntity : spEntityList) {
-            if(String.valueOf(spEntity.getSeq()).equals(spNo)) {
-                spCode = spEntity.getCode();
-                break;
-            }
-        }*/
-
-        /*serialPortUtils.setOnDataReceiveListener(new SerialPortUtils.OnDataReceiveListener() {
-            @Override
-            public void onDataReceive(byte[] buffer, int size, int step) {
-                Log.d(TAG,"####        onDataReceive             （1)设置数据，deviceCode:"+deviceCode);
-                //Log.d(TAG, "~~~~~~~~~~~~~ handle recv data,"+new Date().toString());
-                String protocol="";
-                List<InstructionEntity> instructionlist = new ArrayList<>();
-
-                resultDisplay = LocalData.devDataMap.get(deviceCode);
-                if(resultDisplay == null) {
-                    resultDisplay = new HashMap<>();
-                }
-
-                //InstructionEntity instructionEntity = instructionlist.stream().filter(a->a.getProtocolCode().equals(protocol) && a.getSeq()==step).collect(Collectors.toList()).get(0);
-                InstructionEntity instructionEntity = new InstructionEntity();
-                for(InstructionEntity a : instructionlist) {
-                    if(a.getProtocolCode().equals(protocol) && a.getSeq()==step) {
-                        instructionEntity = a;
-                        break;
-                    }
-                }
-                String instructionCode = instructionEntity.getCode();
-                String str = instructionEntity.getStr();
-                String rule = instructionEntity.getRule();
-                String encoding = instructionEntity.getEncoding();
-                String[] arr = rule.split("\\|");
-
-                Map<String, String> resultMap = new HashMap<>();
-
-                //List<ResultEntity> resultItemList = LocalData.resultlist.stream().filter(a->a.getInstructionCode().equals(instructionCode)).sorted(Comparator.comparing(ResultEntity::getSeq)).collect(Collectors.toList());
-                List<ResultEntity> resultItemList = new ArrayList<>();
-                for(ResultEntity a : LocalData.resultlist) {
-                    if(a.getInstructionCode().equals(instructionCode)) {
-                        resultItemList.add(a);
-                    }
-                }
-
-                Map<String, String> map = new HashMap<>();
-                for(String s : arr) {
-                    String[] arr2 = s.split("=");
-                    map.put(arr2[0],arr2[1]);
-                }
-                String resultType = map.get("1");
-                if(resultType.equals(RuleEnum.RuleStep1.ASCII.toString())) {
-                    try {
-                        handleData_str(instructionCode, arr, rule, resultItemList, buffer, size, encoding, resultMap);
-                    } catch (Exception e) {
-                        //onThrowErrorListener.OnThrowError(e.getMessage());
-                        Log.d(TAG, "error"+e.getMessage());
-                    }
-                } else if(resultType.equals(RuleEnum.RuleStep1.NUMBER.toString())) {
-                    //String[] arr2 = arr[1].split("_");
-                    String trimConfigStr = arr[1];
-                    String[] arr3 = trimConfigStr.split("=")[1].split("_");
-                    int leftTrim = Integer.parseInt(arr3[0].substring(4));
-                    int rightTrim = Integer.parseInt(arr3[1].substring(5));
-                    //int leftTrim = Integer.parseInt(arr2[0].substring(4));
-                    byte[] bytes = new byte[size-leftTrim-rightTrim];
-                    System.arraycopy(buffer, leftTrim, bytes, 0, size-leftTrim-rightTrim);
-                    try {
-                        handleData_number(resultItemList, bytes, resultMap);
-                    } catch (Exception e) {
-                        onThrowErrorListener.OnThrowError(e.getMessage());
-                    }
-                } else if(resultType.equals(RuleEnum.RuleStep1.MIX.toString())) {
-
-                }
-
-                //List<FieldDisplayEntity> fieldDisplayList = LocalData.fieldDisplaylist.stream().filter(a->a.getProtocolCode().equals(protocol)).sorted(Comparator.comparing(FieldDisplayEntity::getSeq)).collect(Collectors.toList());
-                List<FieldDisplayEntity> fieldDisplayList = new ArrayList<>();
-                for(FieldDisplayEntity a: LocalData.fieldDisplaylist) {
-                    if(a.getProtocolCode().equals(protocol)) {
-                        fieldDisplayList.add(a);
-                    }
-                }
-
-                for(FieldDisplayEntity e : fieldDisplayList) {
-                    String fieldName = e.getFieldName();
-                    String displayName = e.getDisplayName();
-                    int columnIndex = e.getColumnIndex();
-                    String fieldValue = resultMap.get(fieldName);
-
-                    if(fieldValue != null) {
-                        ViewEntity viewEntity = new ViewEntity(fieldValue, columnIndex);
-                        resultDisplay.put(displayName, viewEntity);
-                    }
-                }
-                String ids = deviceCode;
-                Log.d(TAG,"####（2)设置数据，deviceCode:"+deviceCode);
-                LocalData.devDataMap.put(deviceCode, resultDisplay);
-
-                //Toast.makeText(mContext, fieldDisplayList.size()+"", Toast.LENGTH_SHORT).show();
-
-                //save data history, send data to http server
-                //move to timer
-//                try {
-//                    DataHisEntity dataHisEntity = new DataHisEntity();
-//                    dataHisEntity.setDevCode(deviceCode);
-//                    dataHisEntity.setDevName(devname);
-//                    dataHisEntity.setSpCode(spCode);
-//                    dataHisEntity.setCreateTime(new Date());
-//                    dataService.addDataHis(dataHisEntity);
-//
-//                    JSONObject json = new JSONObject();
-//                    for(String key : resultDisplay.keySet()) {
-//                        ViewEntity entity = resultDisplay.get(key);
-//                        json.put(key, entity.getValue());
-//                    }
-//                    HttpUtil.httpPost(LocalData.url, json.toString());
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-
-            }
-        });*/
     }
 
     Timer timer = new Timer();
@@ -206,42 +84,14 @@ public class DevBizHandler implements Runnable  {
                 bizHandle();
                 Log.d(TAG, spNo+", ~~~~~~~~~~~~~~~~~~~~~,"+new Date().toString());
             }
-            //Message message = new Message();
-            //message.what = 1;
-            //handler.sendMessage(message);
+
         }
     };
-    /*Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case 1:
-                    f1();
-                    break;
-            }
-            super.handleMessage(msg);
-        }
 
-        void f1() {
-            if(flagSpRun) {
-                bizHandle();
-
-//                String qmd = "514d440d0a";
-//                byte[] bytes = ChangeTool.HexToByteArr(qmd);
-//                new Thread(new c1(bytes,2,"2")).start();
-
-                Log.d(TAG, spNo+", ~~~~~~~~~~~~~~~~~~~~~,"+new Date().toString());
-            }
-        }
-    };*/
-
- /*   public void setSerialPortUtils(SerialPortUtils serialPortUtils) {
-        this.serialPortUtils = serialPortUtils;
-    }*/
     @Override
     public void run() {
         try{
-            timer.schedule(task, 1000, 30000);
+            timer.schedule(task, 1000, main_query);
         } catch (Exception e) {
             onThrowErrorListener.OnThrowError("biz error，"+e.getMessage());
         }
@@ -285,11 +135,7 @@ public class DevBizHandler implements Runnable  {
                 }
                 String msg = e.getOptValue();
                 byte[] bytes = ChangeTool.HexToByteArr(msg);
-                int ret = readSp(bytes, devCode,99,readType,protocolCode,instructionlist); //define opt 99
-                if(ret == -1) {
-                    break;
-                }
-                devOptList.remove(i); // remove command
+
             }
             flagTimerRead=0;
         }
@@ -304,10 +150,7 @@ public class DevBizHandler implements Runnable  {
     private String devname="";
     //设备类型
     private String devtype="";
-    //设备协议
-//    private String protocol;
-    //
-    private String readType="";
+
     //格式化字符串
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     //
@@ -320,10 +163,7 @@ public class DevBizHandler implements Runnable  {
                 e.printStackTrace();
             }
         }
-        //Log.d(TAG, "operating thread running,bizHandle2");
         flagTimerRead=1;
-        //List<DevEntity> devlist = dataService.getDev(spNo);
-
         /*List<DevEntity> devlist = new ArrayList<>();
 
         for(DevEntity entity : LocalData.devlist) {
@@ -338,35 +178,11 @@ public class DevBizHandler implements Runnable  {
 
         //进入第一个循环，迭代一个串口上挂载的所有设备
         for(DevEntity entity : devlist) {
-            //mac00100101
-            deviceCode = entity.getCode();
-            //ups1
-            devname = entity.getName();
-            //ups
-            devtype = entity.getTypeCode();
-            String protocol = entity.getProtocolCode();
-            //Log.d(TAG, "operating thread running,bizHandle31");
-            /*for(ProtocolEntity protocolEntity : LocalData.protocollist) {
-                if(protocolEntity.getCode().equals(protocol)) {
-                    readType=protocolEntity.getReadType();
-                    break;
-                }
-            }*/
-            //判断协议是否正确，可以省略，获取协议读取类型
-            if(LocalData.Cache_protocollist.containsKey(protocol)){
-                readType=LocalData.Cache_protocollist.get(protocol).getReadType();
-            }
 
-            /*List<InstructionEntity> instructionlist = new ArrayList<>();
-            for(InstructionEntity a : LocalData.instructionlist) {
-                if(a.getProtocolCode().equals(protocol)) {
-                    instructionlist.add(a);
-                }
-            }*/
-            //获取协议指令集
-            List<InstructionEntity> instructionlist = LocalData.Cache_instructionlist.get(protocol);
-
+            List<InstructionEntity> instructionlist = LocalData.Cache_instructionlist.get(entity.getProtocolCode());
+            Log.d(TAG,"设备名称："+entity.getName()+"设备id:"+entity.getCode()+"#####（1)指令集条数:"+instructionlist.size());
             //进入第二个循环，迭代协议指令集，每条指令集发送查询
+
             for(InstructionEntity instructionEntity : instructionlist) {
                 //执行指令前等待，执行过快会丢失数据
                 try{
@@ -375,7 +191,7 @@ public class DevBizHandler implements Runnable  {
                     Log.d(TAG,"handle_wait_slim error#################################");
                 }
                 //一般不会进入这个if
-                if(devOptList.size()>0) { //handle instant device setting
+                /*if(devOptList.size()>0) { //handle instant device setting
                     int count = devOptList.size();
                     for(int i=count-1;i>0;i--) {
                         DevOptHisEntity e = devOptList.get(i);
@@ -387,69 +203,60 @@ public class DevBizHandler implements Runnable  {
                         }
                         devOptList.remove(i); // remove command
                     }
-                }
-                //获取指令集步进，ups1-6，其它都是1
-                int step = instructionEntity.getSeq();
-                //获取指令数据字符串
-                String instructionStr = instructionEntity.getStr();
-                Log.d(TAG, "====---===deviceCode:"+deviceCode+",instructionStr:"+instructionStr);
-                //格式化指令为16进制
-                byte[] bytes = ChangeTool.HexToByteArr(instructionStr);
+                }*/
+
                 //优化流程，直接传递deventity
-                new Thread(new c1(bytes,deviceCode,step,readType,protocol, instructionlist)).start();
+                new Thread(new c1(instructionEntity,instructionlist,entity)).start();
             }
         }
         flagTimerRead = 0;
     }
 
-
-
     class c1 implements Runnable{
-        private byte[] bytes;
-        private String devCode;
-        private int step;
-        private String readType;
-        private String protocol;
-        List<InstructionEntity> instructionlist;
-        public c1(byte[]bytes,String devCode, int step,String readType, String protocol, List<InstructionEntity> instructionlist){
-            this.bytes=bytes;
-            this.devCode=devCode;
-            this.step=step;
-            this.readType=readType;
-            this.protocol=protocol;
+        private List<InstructionEntity> instructionlist;
+        private InstructionEntity instructionEntity;
+        private DevEntity entity;
+        public c1(InstructionEntity instructionEntity,List<InstructionEntity> instructionlist,DevEntity entity){
+            //指令集列表
             this.instructionlist = instructionlist;
+            this.entity = entity;
+            this.instructionEntity = instructionEntity;
         }
-
         @Override
-
         public void run(){
-            readSp(bytes,devCode,step,readType, protocol, instructionlist);
-            //Log.e(TAG,deviceCode+"read Data send --------------------------"+sdf.format(new Date()));
+            readSp(instructionEntity,instructionlist,entity);
         }
-
     }
-    private int readSp(byte[] bytes, String devCode, int step, String readType, String protocol, List<InstructionEntity> instructionlist) {
 
+    private int readSp(InstructionEntity instructionEntity,List<InstructionEntity> instructionlist,DevEntity entity) {
+        //定义默认返回值
         int ret=0;
+        //
         RecvDataDto recvDataDto = new RecvDataDto();
+        //获取指令数据字符串
+        String instructionStr = instructionEntity.getStr();
+
+        //格式化指令为16进制
+        byte[] bytes=ChangeTool.HexToByteArr(instructionStr);
+        //获取指令步进，ups1-6，其它都是1
+         int step=instructionEntity.getSeq();
+        //获取协议号
+        String protocol=entity.getProtocolCode();
+        //获取设备id
+        String devCode=entity.getCode();
+        //获取指令读取类型，ups2，其余1
+        String readType=LocalData.Cache_protocollist.get(protocol).getReadType();
+        Log.d(TAG, "====---===deviceCode:"+devCode+",instructionStr:"+instructionStr);
+        //发送查询指令
         ret = serialPortUtils.readOvertime(bytes, devCode, readType, recvDataDto);
         if(ret == -1) {
-            Log.d(TAG, devname+" offline");
+            Log.e(TAG, entity.getName()+" offline-------------------------------------------------");
             //remove offline device
-           for(DevEntity e : LocalData.devlist) {
-                if(e.getCode().equals(deviceCode)) {
+            for(DevEntity e:LocalData.Cache_devlist.get(spNo)){
+                if(e.getCode().equals(devCode)) {
                     e.setLostTimes(e.getLostTimes()+1);
                     if(e.getLostTimes()>=5) { //5次连接不上就判断设备掉线
                         LocalData.devlist.remove(e);
-                        //循环遍历cache，删除dev
-                        /*for(String brand:LocalData.Cache_devlist.keySet()){
-                            for (DevEntity devEntity:LocalData.Cache_devlist.get(brand)){
-                                if(devEntity.getCode().equals(deviceCode)){
-                                    LocalData.Cache_devlist.get(brand).remove(devEntity);
-                                    break;
-                                }
-                            }
-                        }*/
                         LocalData.Cache_devlist.get(spNo).remove(e);
                         //设备掉线告警
                         WarnHisEntity warnHisEntity = new WarnHisEntity();
@@ -461,74 +268,64 @@ public class DevBizHandler implements Runnable  {
                         warnHisEntity.setWarnContent("设备掉线");
                         dataService.addWarn_DeviceOffline(warnHisEntity);
                     }
-
                     break;
                 }
             }
-        } else {
-            for(DevEntity e : LocalData.devlist) {
+        } else
+            {
+            for(DevEntity e :LocalData.Cache_devlist.get(spNo)) {
                 if(e.getCode().equals(devCode)) {
                     e.setLostTimes(0);
                     break;
                 }
             }
-            /*for(DevEntity e : LocalData.Cache_devlist.get(spNo)) {
-                if(e.getCode().equals(devCode)) {
-                    e.setLostTimes(0);
-                    break;
-                }
-            }*/
-
-            //Log.e(TAG,deviceCode+"read Data recd --------------------------"+sdf.format(new Date()));
-            handleRecvData(recvDataDto.getBytes(), recvDataDto.getCount(), step, devCode, protocol, instructionlist);
+            //解析数据recvDataDto，
+            handleRecvData(recvDataDto,instructionEntity,instructionlist,entity);
         }
-        //Log.d(TAG, "operating thread running,readSp"+ret);
         return ret;
     }
 
-    private void handleRecvData(byte[] buffer, int size, int step, String devCode, String protocol1, List<InstructionEntity> instructionlist1)  {
-        //Log.d(TAG,"####        onDataReceive             （1)设置数据，deviceCode:"+deviceCode);
-        //判断devMap有devcode，没有就新建
-        resultDisplay = LocalData.devDataMap.get(devCode);
-        if(resultDisplay == null) {
-            resultDisplay = new HashMap<>();
-        }
-        //迭代指令集，
-        InstructionEntity instructionEntity = new InstructionEntity();
-        for(InstructionEntity a : instructionlist1) {
-            if(a.getProtocolCode().equals(protocol1) && a.getSeq()==step) {
-                instructionEntity = a;
-                break;
-            }
-        }
+    private void handleRecvData(RecvDataDto recvDataDto,InstructionEntity instructionEntity,List<InstructionEntity> instructionlist,DevEntity entity){//byte[] buffer, int size, int step, String devCode, String protocol1, List<InstructionEntity> instructionlist1)  {
+        //获取设备id
+        String devCode=entity.getCode();
+        Log.d(TAG,"####        onDataReceive             （1)设置数据，deviceCode:"+devCode);
+
+        //recvData
+        byte[] buffer = recvDataDto.getBytes();
+        int size = recvDataDto.getCount();
+        //指令code
         String instructionCode = instructionEntity.getCode();
+        //指令字符串
         String str = instructionEntity.getStr();
+        //指令分解规则
         String rule = instructionEntity.getRule();
+        //utf8
         String encoding = instructionEntity.getEncoding();
+        //指令分解规则
         String[] arr = rule.split("\\|");
-
-        Map<String, String> resultMap = new HashMap<>();
-
-        /*List<ResultEntity> resultItemList = new ArrayList<>();
-        for(ResultEntity a : LocalData.resultlist) {
-            if(a.getInstructionCode().equals(instructionCode)) {
-                resultItemList.add(a);
-            }
-        }*/
+        //获取分解指令集的方法
         List<ResultEntity> resultItemList = LocalData.Cache_resultlist.get(instructionCode);
+
         Map<String, String> map = new HashMap<>();
+        //额定电压 220v
         for(String s : arr) {
             String[] arr2 = s.split("=");
             map.put(arr2[0],arr2[1]);
         }
+        //分解第一个
         String resultType = map.get("1");
+        //存放解析后的数据
+        Map<String, String> resultMap = new HashMap<>();
+        //如果是ascii码
         if(resultType.equals(RuleEnum.RuleStep1.ASCII.toString())) {
             try {
-                handleData_str(instructionCode, arr, rule, resultItemList, buffer, size, encoding, resultMap);
+                resultMap= handleData_str(instructionCode, arr, rule, resultItemList, buffer, size, encoding);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else if(resultType.equals(RuleEnum.RuleStep1.NUMBER.toString())) {
+        }
+        //如果是int码
+        else if(resultType.equals(RuleEnum.RuleStep1.NUMBER.toString())) {
             //String[] arr2 = arr[1].split("_");
             String trimConfigStr = arr[1];
             String[] arr3 = trimConfigStr.split("=")[1].split("_");
@@ -536,128 +333,152 @@ public class DevBizHandler implements Runnable  {
             int rightTrim = Integer.parseInt(arr3[1].substring(5));
             //int leftTrim = Integer.parseInt(arr2[0].substring(4));
             byte[] bytes = new byte[size-leftTrim-rightTrim];
-            System.arraycopy(buffer, leftTrim, bytes, 0, size-leftTrim-rightTrim);
+            int end = size-leftTrim-rightTrim;
+            System.arraycopy(buffer, leftTrim, bytes, 0, end);
             try {
-                handleData_number(resultItemList, bytes, resultMap);
+                resultMap=  handleData_number(resultItemList, bytes);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         } else if(resultType.equals(RuleEnum.RuleStep1.MIX.toString())) {
 
         }
-
-        List<FieldDisplayEntity> fieldDisplayList = new ArrayList<>();
-        for(FieldDisplayEntity a: LocalData.fieldDisplaylist) {
-            if(a.getProtocolCode().equals(protocol1)) {
-                fieldDisplayList.add(a);
-            }
-        }
-
+        //如果没有解析到数据，退出
+        if(resultMap.size() <1) return;
+        //存放指令查询到的数据,判断devMap有devcode，没有就新建
+        resultDisplay = new HashMap<>();
         StringBuffer sb = new StringBuffer();
-        for(FieldDisplayEntity e : fieldDisplayList) {
-            String fieldName = e.getFieldName();
-            String displayName = e.getDisplayName();
-            int columnIndex = e.getColumnIndex();
-            String fieldValue = resultMap.get(fieldName);
-            sb.append(displayName+"："+fieldValue+"，");
+        Log.e(TAG,resultMap.toString()+"--------------");
 
-            if(fieldValue != null) {
+        for(String key:resultMap.keySet()){
+            try {
+                //获取协议的field，map结构
+                String k = instructionEntity.getProtocolCode()+key;
+                if (!LocalData.Cache_all_fieldDisplaylist.containsKey(k)) {
+                    Log.e(TAG,"协议："+instructionEntity.getProtocolCode()+"的"+key+"被屏蔽");
+                    continue;
+                }
+                FieldDisplayEntity e = LocalData.Cache_all_fieldDisplaylist.get(k);
+                //String fieldName = e.getFieldName();
+                String displayName = e.getDisplayName();
+                int columnIndex = e.getColumnIndex();
+                String fieldValue = resultMap.get(key);
+                sb.append(displayName+"："+fieldValue+"，");
+
                 ViewEntity viewEntity = new ViewEntity(fieldValue, columnIndex);
                 resultDisplay.put(displayName, viewEntity);
+            }catch (Exception e){
+                e.printStackTrace();
             }
         }
-        //Log.d(TAG,"####（2)设置数据，devCode:"+devCode);
-        LocalData.devDataMap.put(devCode, resultDisplay);
-        Log.d(TAG, "+++++++"+devCode+"："+sb.toString());
-        //Log.e(TAG,devCode+"read Data end --------------------------"+sdf.format(new Date()));
+        switch (entity.getTypeCode()){
+            case "ups":
+                if(LocalData.devDataMap.containsKey(devCode)){
+                    LocalData.devDataMap.get(devCode).putAll(resultDisplay);
+                }else {
+                    LocalData.devDataMap.put(devCode, resultDisplay);
+                }
+                break;
+                default:
+                    LocalData.devDataMap.put(devCode, resultDisplay);
+                    break;
+        }
+
+        Log.d(TAG, "+++++++"+devCode+"："+resultDisplay.toString());
+
+
     }
 
+    private Map<String, String> handleData_number(List<ResultEntity> resultItemList, byte[] bytes) throws Exception {
+        Map<String, String> resultMap = new HashMap<>();
 
-    //SQLiteDatabase db;
+            for(ResultEntity resultItemEntity:resultItemList) {
+                //ResultEntity resultItemEntity = resultItemList.get(i);
+                String pFieldName = resultItemEntity.getFieldName();
+                String pDisplayName = resultItemEntity.getDisplayName();
+                String pPrefix = resultItemEntity.getPrefix();
+                pPrefix=pPrefix==null?"":pPrefix;
+                String pSuffix = resultItemEntity.getSuffix();
+                pSuffix=pSuffix==null?"":pSuffix;
+                int pStartAddr = resultItemEntity.getStartAddr();
+                int pLen = resultItemEntity.getLen();
+                int pRatio = resultItemEntity.getRatio();
+                String pDataType = resultItemEntity.getDataType();
+                String pDataType2 = resultItemEntity.getDataType2();
+                String pWarnType = resultItemEntity.getWarnType();
 
+                float fVal=0f;
+                String pVal="";
 
+                try{
 
-    private void handleData_number(List<ResultEntity> resultItemList, byte[] bytes, Map<String, String> resultMap) throws Exception {
-        Date now = new Date();
-        for(int i=0;i<resultItemList.size(); i++) {
-            ResultEntity resultItemEntity = resultItemList.get(i);
-            String pFieldName = resultItemEntity.getFieldName();
-            String pDisplayName = resultItemEntity.getDisplayName();
-            String pPrefix = resultItemEntity.getPrefix();
-            pPrefix=pPrefix==null?"":pPrefix;
-            String pSuffix = resultItemEntity.getSuffix();
-            pSuffix=pSuffix==null?"":pSuffix;
-            int pStartAddr = resultItemEntity.getStartAddr();
-            int pLen = resultItemEntity.getLen();
-            int pRatio = resultItemEntity.getRatio();
-            String pDataType = resultItemEntity.getDataType();
-            String pDataType2 = resultItemEntity.getDataType2();
-            String pWarnType = resultItemEntity.getWarnType();
-
-            float fVal=0f;
-            String pVal="";
-            if(pDataType2.equals(RuleEnum.DataType2.INT.toString())) {
-                if(pLen != 4) {
-                    throw new Exception("int length configuration wrong for "+pFieldName);
-                }
-                int iVal = ChangeTool.bytesToInt(bytes, pStartAddr);
-                fVal = ((float)iVal)/pRatio;
-                pVal = pPrefix + String.valueOf(fVal) + pSuffix;
-            } else if (pDataType2.equals(RuleEnum.DataType2.SHORT.toString())) {
-                if(pLen != 2) {
-                    throw new Exception("short length configuration wrong for "+pFieldName);
-                }
-                int iVal = ChangeTool.bytesToShort(bytes, pStartAddr);
-                fVal = ((float)iVal)/pRatio;
-                pVal = pPrefix + String.valueOf(fVal) + pSuffix;
-            } else if (pDataType2.equals(RuleEnum.DataType2.USHORT.toString())) {
-                if(pLen != 2) {
-                    throw new Exception("unsigned short length configuration wrong for "+pFieldName);
-                }
-                int iVal = ChangeTool.bytesToUnsignedShort(bytes, pStartAddr);
-                fVal = ((float)iVal)/pRatio;
-                pVal = pPrefix + String.valueOf(fVal) + pSuffix;
-            } else if (pDataType2.equals(RuleEnum.DataType2.FLOAT.toString())) {
-                if(pLen != 4) {
-                    throw new Exception("float length configuration wrong for "+pFieldName);
-                }
-                fVal = ChangeTool.bytesToInt(bytes, pStartAddr);
-                pVal = pPrefix + String.valueOf(fVal) + pSuffix;
-            }
-            resultMap.put(pFieldName, pVal);
-
-            //warn
-            if (pWarnType.equals(RuleEnum.WarnType.UPPER_LOWER_LIMITS.toString())) {
-                float upperLimit = Float.parseFloat(resultItemEntity.getUpperLimit());
-                float lowerLimit = Float.parseFloat(resultItemEntity.getLowerLimit());
-                String warnDesc = "";
-                if(fVal<lowerLimit || fVal>upperLimit) {
-                    now = new Date();
-                    if(fVal<lowerLimit) {
-                        warnDesc = pFieldName+" above upper limit";
-                    } else if(fVal>upperLimit) {
-                        warnDesc = pFieldName+" below lower limit";
+                    if(pDataType2.equals(RuleEnum.DataType2.INT.toString())) {
+                        if(pLen != 4) {
+                            throw new Exception("int length configuration wrong for "+pFieldName);
+                        }
+                        int iVal = ChangeTool.bytesToInt(bytes, pStartAddr);
+                        fVal = ((float)iVal)/pRatio;
+                        pVal = pPrefix + String.valueOf(fVal) + pSuffix;
+                    } else if (pDataType2.equals(RuleEnum.DataType2.SHORT.toString())) {
+                        if(pLen != 2) {
+                            throw new Exception("short length configuration wrong for "+pFieldName);
+                        }
+                        int iVal = ChangeTool.bytesToShort(bytes, pStartAddr);
+                        fVal = ((float)iVal)/pRatio;
+                        pVal = pPrefix + String.valueOf(fVal) + pSuffix;
+                    } else if (pDataType2.equals(RuleEnum.DataType2.USHORT.toString())) {
+                        if(pLen != 2) {
+                            throw new Exception("unsigned short length configuration wrong for "+pFieldName);
+                        }
+                        int iVal = ChangeTool.bytesToUnsignedShort(bytes, pStartAddr);
+                        fVal = ((float)iVal)/pRatio;
+                        pVal = pPrefix + String.valueOf(fVal) + pSuffix;
+                    } else if (pDataType2.equals(RuleEnum.DataType2.FLOAT.toString())) {
+                        //注释报错，有报错会直接退出循环
+                        /*if(pLen != 4) {
+                            throw new Exception("float length configuration wrong for "+pFieldName);
+                        }*/
+                        fVal = ChangeTool.bytesToInt(bytes, pStartAddr);
+                        pVal = pPrefix + String.valueOf(fVal) + pSuffix;
                     }
-                    WarnHisEntity warnHisEntity = new WarnHisEntity();
-                    warnHisEntity.setWarnTitle(warnDesc);
-                    warnHisEntity.setWarnContent("Device name: "+devname+", "+warnDesc+" "+sdf.format(now));
-                    warnHisEntity.setDevCode(deviceCode);
-                    warnHisEntity.setDevName(devname);
-                    warnHisEntity.setDevType(devtype);
-                    warnHisEntity.setCreateTime(now);
-                    dataService.addWarn(warnHisEntity);
+                    resultMap.put(pFieldName, pVal);
+
+                    //warn
+                    if (pWarnType.equals(RuleEnum.WarnType.UPPER_LOWER_LIMITS.toString())) {
+                        float upperLimit = Float.parseFloat(resultItemEntity.getUpperLimit());
+                        float lowerLimit = Float.parseFloat(resultItemEntity.getLowerLimit());
+                        String warnDesc = "";
+                        if(fVal<lowerLimit || fVal>upperLimit) {
+                            Date now = new Date();
+                            if(fVal<lowerLimit) {
+                                warnDesc = pFieldName+" above upper limit";
+                            } else if(fVal>upperLimit) {
+                                warnDesc = pFieldName+" below lower limit";
+                            }
+                            WarnHisEntity warnHisEntity = new WarnHisEntity();
+                            warnHisEntity.setWarnTitle(warnDesc);
+                            warnHisEntity.setWarnContent("Device name: "+devname+", "+warnDesc+" "+sdf.format(now));
+                            warnHisEntity.setDevCode(deviceCode);
+                            warnHisEntity.setDevName(devname);
+                            warnHisEntity.setDevType(devtype);
+                            warnHisEntity.setCreateTime(now);
+                            dataService.addWarn(warnHisEntity);
+                        }
+                    }
+                }catch (Exception e){
+                    Log.e(TAG,e.getMessage());
                 }
             }
-        }
+        return resultMap;
     }
 
-    private void handleData_str(String instructionCode, String[] arr, String rule, List<ResultEntity> resultItemList, byte[] bytes, int size, String encoding, Map<String, String> resultMap) throws Exception {
+    private Map<String, String> handleData_str(String instructionCode, String[] arr, String rule, List<ResultEntity> resultItemList, byte[] bytes, int size, String encoding) throws Exception {
+        Map<String, String> resultMap = new HashMap<>();
         String[] arr3;
         // 1.get string
-        if(arr.length != 3) {
-            throw new Exception("format error: "+ rule);
-        }
-        String resultStr = "";
+        if(arr.length != 3) throw new Exception("format error: "+ rule);
+        //设备返回数据
+        String resultStr;
         try {
             resultStr = new String(bytes, 0,  size, encoding);
         } catch (Exception e) {
@@ -688,7 +509,7 @@ public class DevBizHandler implements Runnable  {
             if(resultItemList.size() != arrResult.length) {
                 //throw new Exception("result item count unequals to result length");
                 Log.d(TAG, "result item count unequals to result length");
-                return;
+                return new HashMap<>();
             }
             //load result data
             for(int i=0; i<resultItemList.size(); i++) {
@@ -713,9 +534,27 @@ public class DevBizHandler implements Runnable  {
                 }
                 // handle warn data
                 if(e.getWarnType().equals(RuleEnum.WarnType.UPPER_LOWER_LIMITS.toString()) || e.getWarnType().equals(RuleEnum.WarnType.WARN_CONFIG.toString())) {
-                    handleWarn_str(instructionCode, e, arrResult[i]);
+                    //handleWarn_str(instructionCode, e, arrResult[i]);
+                   new Thread(new Warn_query(instructionCode, e, arrResult[i])).start();
                 }
             }
+        }
+        return resultMap;
+    }
+    //新线程执行ups错误告警
+    class Warn_query implements Runnable{
+        private String instructionCode;
+        private ResultEntity e;
+        private String fieldValue;
+        public Warn_query(String instructionCode, ResultEntity e, String fieldValue){
+            //指令集列表
+            this.instructionCode = instructionCode;
+            this.e = e;
+            this.fieldValue = fieldValue;
+        }
+        @Override
+        public void run(){
+            handleWarn_str(instructionCode, e, fieldValue);
         }
     }
 
