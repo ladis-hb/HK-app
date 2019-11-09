@@ -1,6 +1,9 @@
 package lads.dev.fragment;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
@@ -8,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -22,13 +26,19 @@ import android.widget.TextView;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import lads.dev.R;
 import lads.dev.biz.LocalData;
 import lads.dev.dto.DevUpsDto;
+import lads.dev.entity.BroadcastArguments;
+import lads.dev.entity.DevEntity;
+import lads.dev.entity.ViewEntity;
+import lads.dev.utils.FormatDevInfo;
 import lads.dev.utils.MyDatabaseHelper;
 import lads.dev.viewadapter.WarningAdapter;
 
@@ -76,6 +86,16 @@ public class DevHomeFragment extends Fragment {
         return fragment;
     }
 
+    TextView txtAC,txtEm,txtTh;
+    MyDatabaseHelper dbHelper;
+    String newLine;
+    TextView txtBasicInfo;
+    TextView txtBatInfo;
+    TextView txtIoInfo;
+    DevUpsDto dto;
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+    private LocalBroadcastManager localBroadcastManager;
+    IntentFilter intentFilter;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,10 +109,6 @@ public class DevHomeFragment extends Fragment {
         initWarnings("所有");
     }
 
-
-
-    MyDatabaseHelper dbHelper;
-    String newLine;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -111,9 +127,25 @@ public class DevHomeFragment extends Fragment {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 Log.d(TAG, "select "+position);
                 String str = "所有";
-                if(position==1){ str="UPS";} else if(position==2){str="空调";}
-                else if(position==3){str="电量仪";}
-                else if(position==4){str="温湿度";}
+                switch (position){
+                    case 1:
+                        str="UPS";
+                        break;
+                    case 2:
+                        str="空调";
+                        break;
+                    case 3:
+                        str="电量仪";
+                        break;
+
+                    case 4:
+                        str="温湿度";
+                        break;
+                        default:
+                            str = "所有";
+                            break;
+                }
+
                 initWarnings(str);
                 WarningAdapter adapter = new WarningAdapter(warninglist);
                 recyclerView.setAdapter(adapter);
@@ -132,75 +164,107 @@ public class DevHomeFragment extends Fragment {
         WarningAdapter adapter = new WarningAdapter(warninglist);
         recyclerView.setAdapter(adapter);
 
-        String str="";
+        txtAC = (TextView) view.findViewById(R.id.txt_acdata_frag_dev_home);
+        txtEm = (TextView) view.findViewById(R.id.txt_emdata_frag_dev_home);
+        txtTh = (TextView) view.findViewById(R.id.txt_thdata_frag_dev_home);
 
-        TextView txtAC = (TextView) view.findViewById(R.id.txt_acdata_frag_dev_home);
-      str = "蒸发器温度：30℃"+newLine+"室内温度：20℃"+newLine+"室内湿度：37%";
-        txtAC.setText(str);
-        TextView txtEM = (TextView) view.findViewById(R.id.txt_emdata_frag_dev_home);
-       str="输入电压：180V"+newLine+"输入电流：99A"+newLine+"输入频率：40Hz"+newLine+"有功功率：80kW"+newLine+"无功功率：60kW"+newLine+"功率因素：1";
-        txtEM.setText(str);
-
-        TextView txtIO = (TextView) view.findViewById(R.id.txt_thdata_frag_dev_home);
-        str="温度1：23℃"+newLine+"湿度1：33.4%"+newLine+"温度2：26℃"+newLine+"湿度2：36%";
-        txtIO.setText(str);
 
         txtBasicInfo = (TextView) view.findViewById(R.id.txt_ups_basicinfo_fragment_dev_home);
         txtBatInfo = (TextView) view.findViewById(R.id.txt_ups_batinfo_fragment_dev_home);
        txtIoInfo = (TextView) view.findViewById(R.id.txt_ups_ioinfo_fragment_dev_home);
 
-        timer.schedule(task, 1000,1000);
+       // timer.schedule(task, 1000,1000);
 
+        //定义广播接受器
+        intentFilter = new IntentFilter();
+        //添加监听事件
+        intentFilter.addAction(BroadcastArguments.getUps());
+        intentFilter.addAction(BroadcastArguments.getTh());
+        intentFilter.addAction(BroadcastArguments.getEm());
+        intentFilter.addAction(BroadcastArguments.getAc());
+        //挂载广播器实例
+        localBroadcastManager = LocalBroadcastManager.getInstance(getContext());
+        //注册监听到实例
+        localBroadcastManager.registerReceiver(broadcastReceiver,intentFilter);
         return view;
     }
 
-    TextView txtBasicInfo;
-    TextView txtBatInfo;
-    TextView txtIoInfo;
-    DevUpsDto dto;
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-    final Handler handler = new Handler() {
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case 1:
-                    update();
+
+    //构造事件处理函数
+    BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            String devid = intent.getStringExtra("devid");
+            switch (action){
+                case "lads.dev.update.Ups":
+                    getDevInfo("ups");
+                    break;
+                case "lads.dev.update.Ac":
+                    getDevInfo("ac");
+                    break;
+
+                case "lads.dev.update.Em":
+                    getDevInfo("em");
+                    break;
+                case "lads.dev.update.Th":
+                    getDevInfo("th");
                     break;
             }
-            super.handleMessage(msg);
-        }
-        void update() {
-            //Log.d("",sdf.format(new Date()));
-            dto = LocalData.devUpsDto;
-            if(dto == null) {
-                dto = new DevUpsDto();
-            }
-            StringBuffer sb = new StringBuffer();
-            sb.append("UPS名称："+newLine);
-            sb.append("工作模式："+dto.getQmod()+newLine);
-           sb.append("相位："+dto.getQmd_pp()+newLine);
-            txtBasicInfo.setText(sb.toString());
-            sb = new StringBuffer();
-            sb.append("电池电压："+dto.getQgs_ss()+"V"+newLine);
-            sb.append("负电池电压："+dto.getQgs_xx()+"V"+newLine);
-            sb.append("剩余容量："+dto.getQbv_tt()+"%"+newLine);
-            txtBatInfo.setText(sb.toString());
-            sb=new StringBuffer();
-            sb.append("输入电压："+dto.getQgs_mm()+"V"+newLine);
-            sb.append("输入频率："+dto.getQgs_hh()+"Hz"+newLine);
-            sb.append("输出电压："+dto.getQgs_ll()+"V"+newLine);
-            sb.append("输出频率："+dto.getQgs_nn()+"Hz"+newLine);
-            txtIoInfo.setText(sb.toString());
-        }
-    };
-    Timer timer = new Timer();
-    TimerTask task = new TimerTask() {
-        public void run() {
-            Message message = new Message();
-            message.what = 1;
-            handler.sendMessage(message);
+
         }
     };
 
+    private void getDevInfo(String devType){
+        String AcInfo = "";
+        String EmInfo = "";
+        String ThInfo = "";
+        for(String code:LocalData.Cache_all_devlist.keySet()){
+            DevEntity entity = LocalData.Cache_all_devlist.get(code);
+            String type = entity.getTypeCode();
+            if(entity.getTypeCode().equals(devType)){
+                String devid = entity.getCode();
+                Map<String,ViewEntity> devMap = LocalData.devDataMap.get(devid);
+                if(devMap == null) return;
+                switch (devType){
+                    case "ups":
+                        Map<String,String> map = FormatDevInfo.ShortUps(devid);
+                        txtBasicInfo.setText(map.get("BasicInfo"));
+                        txtBatInfo.setText(map.get("BatInfo"));
+                        txtIoInfo.setText(map.get("IoInfo"));
+                        /*StringBuffer sb = new StringBuffer();
+                        sb.append("UPS名称："+entity.getName()+newLine);
+                        if(devMap.containsKey("工作模式")) sb.append("工作模式："+devMap.get("工作模式").getValue()+newLine);
+                        if(devMap.containsKey("相位")) sb.append("相位："+devMap.get("相位").getValue()+newLine);
+                        txtBasicInfo.setText(sb.toString());
+                        sb = new StringBuffer();
+                        if(devMap.containsKey("电池电压")) sb.append("电池电压："+devMap.get("电池电压").getValue()+newLine);
+                        if (devMap.containsKey("负电池电压"))sb.append("负电池电压："+devMap.get("负电池电压").getValue()+newLine);
+                        if(devMap.containsKey("剩余容量")) sb.append("剩余容量："+devMap.get("剩余容量").getValue()+newLine);
+                        txtBatInfo.setText(sb.toString());
+                        sb=new StringBuffer();
+                        if(devMap.containsKey("输入电压")) sb.append("输入电压："+devMap.get("输入电压").getValue()+newLine);
+                        if(devMap.containsKey("输入频率")) sb.append("输入频率："+devMap.get("输入频率").getValue()+newLine);
+                        if(devMap.containsKey("输出电压")) sb.append("输出电压："+devMap.get("输出电压").getValue()+newLine);
+                        if(devMap.containsKey("输出频率")) sb.append("输出频率："+devMap.get("输出频率").getValue()+newLine);
+                        txtIoInfo.setText(sb.toString());*/
+                        break;
+                    case "ac":
+                        AcInfo +="设备名称:"+entity.getName()+"\n"+ FormatDevInfo.ShortAC(devid)+"\n";
+                        break;
+                    case "em":
+                        EmInfo +="设备名称:"+entity.getName()+"\n"+ FormatDevInfo.ShortEM(devid)+"\n";
+                        break;
+                    case "th":
+                        ThInfo += "设备名称:"+entity.getName()+"\n"+ FormatDevInfo.ShortTH(devid)+"\n";
+                        break;
+                }
+            }
+        }
+        if(!AcInfo.equals("")) txtAC.setText(AcInfo);
+        if(!EmInfo.equals("")) txtEm.setText(EmInfo);
+        if(!ThInfo.equals("")) txtTh.setText(ThInfo);
+    }
 
     List<String> warninglist = new ArrayList<>();
     private void initWarnings(String type) {
@@ -254,17 +318,6 @@ public class DevHomeFragment extends Fragment {
         super.onDetach();
         mListener = null;
     }
-
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);

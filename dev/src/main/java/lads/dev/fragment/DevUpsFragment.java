@@ -1,9 +1,11 @@
 package lads.dev.fragment;
 
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
@@ -13,6 +15,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.renderscript.ScriptGroup;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -39,6 +42,7 @@ import lads.dev.activity.SpConfigActivity;
 import lads.dev.biz.DbDataService;
 import lads.dev.biz.LocalData;
 import lads.dev.dto.DevUpsDto;
+import lads.dev.entity.BroadcastArguments;
 import lads.dev.entity.DevEntity;
 import lads.dev.entity.DevOptEntity;
 import lads.dev.entity.DevOptHisEntity;
@@ -46,6 +50,7 @@ import lads.dev.entity.KeyValueEntity;
 import lads.dev.entity.ProtocolEntity;
 import lads.dev.entity.ViewEntity;
 import lads.dev.entity.WarnHisEntity;
+import lads.dev.utils.DevOperate;
 import lads.dev.utils.MyDatabaseHelper;
 import lads.dev.utils.MyUtil;
 import lads.dev.viewadapter.DevAdapter;
@@ -105,6 +110,8 @@ public class DevUpsFragment extends Fragment {
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
     }
+    private LocalBroadcastManager localBroadcastManager;
+    IntentFilter intentFilter;
 
     private String deviceCode;
     DevAdapter devAdapter;
@@ -112,6 +119,13 @@ public class DevUpsFragment extends Fragment {
     String newLine;
     Button btnRefresh,btnHistory,btnOperate;
     DbDataService dbDataService;
+    TextView txtBasicInfo;
+    TextView txtBatInfo;
+    TextView txtIoInfo;
+    DevUpsDto dto;
+    //list
+    List<DevEntity> devlist= new ArrayList<>();
+    List<String> warninglist = new ArrayList<>();
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -126,7 +140,6 @@ public class DevUpsFragment extends Fragment {
         btnHistory = (Button) view.findViewById(R.id.devUpsFragment_btn_his) ;
         btnOperate = (Button) view.findViewById(R.id.devUpsFragment_btn_opt) ;
 
-        initWarnings();
         RecyclerView recyclerView2 = (RecyclerView) view.findViewById(R.id.recyclerview_warn_fragment_dev_ups);
         LinearLayoutManager layoutManager2 = new LinearLayoutManager(getContext());
         recyclerView2.setLayoutManager(layoutManager2);
@@ -158,16 +171,7 @@ public class DevUpsFragment extends Fragment {
                 startActivity(intent);
             }
         });
-
-//        View view2 = inflater.inflate(R.layout.content_devopt, container, false);
-//        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-//        AlertDialog alertDialog = builder.setTitle("Operation")
-//                .setView(view2)
-//                .create();
-//        Button btnOpen = view2.findViewById(R.id.content_devopt_btn_open);
-//        Button btnClose = view2.findViewById(R.id.content_devopt_btn_close);
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+      AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
 
         btnOperate.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -193,10 +197,7 @@ public class DevUpsFragment extends Fragment {
                     public void onClick(DialogInterface dialogInterface, int i) {
 //                        Toast.makeText(getContext(), i,Toast.LENGTH_SHORT).show();
                         Log.d("aaa", i+"");
-                        if(DevSettingFragment.devBizHandler1 == null) {
-                            Toast.makeText(getContext(), "setting first", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
+
                         String strCmd = list.get(i).getOptValue();
                         DevEntity devEntity = dbDataService.getDevByCode(deviceCode);
                         String spNo = devEntity.getSpNo();
@@ -205,15 +206,7 @@ public class DevUpsFragment extends Fragment {
                         devOptHisEntity.setDevCode(devEntity.getCode());
                         devOptHisEntity.setOptName(list.get(i).getOptName());
                         devOptHisEntity.setOptValue(list.get(i).getOptValue());
-                        if(spNo.equals("1")) {
-                            DevSettingFragment.devBizHandler1.addDevOpt(devOptHisEntity);
-                        } else if(spNo.equals("2")) {
-                            DevSettingFragment.devBizHandler2.addDevOpt(devOptHisEntity);
-                        } else if(spNo.equals("3")) {
-                            DevSettingFragment.devBizHandler3.addDevOpt(devOptHisEntity);
-                        } else if(spNo.equals("4")) {
-                            DevSettingFragment.devBizHandler4.addDevOpt(devOptHisEntity);
-                        }
+                        DevOperate.addDevOpt(devOptHisEntity);
                         Toast.makeText(getContext(), "succeed", Toast.LENGTH_SHORT).show();
                     }
 
@@ -223,7 +216,23 @@ public class DevUpsFragment extends Fragment {
         });
 
         loadUps();
-        timer.schedule(task, 1000,1000);
+        initWarnings();
+        //定义广播接受器
+        intentFilter = new IntentFilter();
+        //添加监听事件
+        intentFilter.addAction(BroadcastArguments.getUps());
+        //构造事件处理函数
+        BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                //Toast.makeText(getContext(),intent.getStringExtra("devid"),Toast.LENGTH_LONG).show();
+                showDevInfo(intent.getStringExtra("devid"));
+            }
+        };
+        //挂载广播器实例
+        localBroadcastManager = LocalBroadcastManager.getInstance(getContext());
+        //注册监听到实例
+        localBroadcastManager.registerReceiver(broadcastReceiver,intentFilter);
         return view;
     }
 
@@ -242,7 +251,7 @@ public class DevUpsFragment extends Fragment {
         for(DevEntity entity : LocalData.devlist) {
             if(entity.getTypeCode().equals("ups")) {
                 KeyValueEntity kv = new KeyValueEntity(entity.getCode(), entity.getName());
-                showDevInfo(entity.getCode());
+                devlist.add(entity);
                 list.add(kv);
             }
         }
@@ -282,12 +291,16 @@ public class DevUpsFragment extends Fragment {
         StringBuffer sb3 = new StringBuffer();
         for(String key : map.keySet()) {
             ViewEntity ve = map.get(key);
-            if(ve.getColumnIndex()==1) {
-                sb1.append(key+":"+ve.getValue()+"\n");
-            } else if(ve.getColumnIndex()==2) {
-                sb2.append(key+":"+ve.getValue()+"\n");
-            } else if (ve.getColumnIndex()==3) {
-                sb3.append(key+":"+ve.getValue()+"\n");
+            switch (ve.getColumnIndex()){
+                case 1:
+                    sb1.append(key+":"+ve.getValue()+"\n");
+                    break;
+                case 2:
+                    sb2.append(key+":"+ve.getValue()+"\n");
+                    break;
+                case 3:
+                    sb3.append(key+":"+ve.getValue()+"\n");
+                    break;
             }
         }
         txtBasicInfo.setText(sb1.toString());
@@ -295,40 +308,9 @@ public class DevUpsFragment extends Fragment {
         txtIoInfo.setText(sb3.toString());
     }
 
-    private void showDevHis(String devCode) {
-        Toast.makeText(getContext(),"showDevHis",Toast.LENGTH_SHORT).show();
-    }
 
-    TextView txtBasicInfo;
-    TextView txtBatInfo;
-    TextView txtIoInfo;
-    DevUpsDto dto;
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-    final Handler handler = new Handler() {
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case 1:
-                    update();
-                    break;
-            }
-            super.handleMessage(msg);
-        }
-        void update() {
-            showDevInfo(deviceCode);
-        }
-    };
-    Timer timer = new Timer();
-    TimerTask task = new TimerTask() {
-        public void run() {
-            Message message = new Message();
-            message.what = 1;
-            handler.sendMessage(message);
-        }
-    };
-
-    List<String> warninglist = new ArrayList<>();
+    //
     private void initWarnings() {
-
         warninglist.clear();
         List<WarnHisEntity> list = new ArrayList<>();
         if(MyUtil.isStringEmpty(deviceCode)) {
@@ -359,7 +341,6 @@ public class DevUpsFragment extends Fragment {
 //        recyclerView.setAdapter(upsAdapter);
     }
 
-    List<String> devlist = new ArrayList<>();
 
     // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {

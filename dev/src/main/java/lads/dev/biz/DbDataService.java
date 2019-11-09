@@ -46,14 +46,7 @@ public class DbDataService {
     }
 
     public void initContextData() {
-//        LocalData.typelist = getDevType();
-//        LocalData.protocollist = getProtocol();
-//        LocalData.instructionlist = getInstruction();
-//        LocalData.resultlist = getResult();
-//        LocalData.fieldDisplaylist = getFieldDisplay();
-//        LocalData.warnCfglist = getWarnCfg();
-//        LocalData.devlist = getDev();
-//        LocalData.splist = getSp();
+        getSp();
         getDevType();
         getProtocol();
         getInstruction();
@@ -61,15 +54,17 @@ public class DbDataService {
         getFieldDisplay();
         getWarnCfg();
         getDev();
-        getSp();
+
         getSysParam();
         getDevOpt();
     }
 //获取波特率
     public List<SpEntity> getSp() {
+        Cursor cursor = db.rawQuery("select * from sp order by seq", null);
+
         List<SpEntity> list = new ArrayList<>();
         Map<String,SpEntity> map = new HashMap<>();
-        Cursor cursor = db.rawQuery("select * from sp order by seq", null);
+
         if(cursor.moveToFirst()) {
             do{
                 SpEntity entity = new SpEntity();
@@ -77,6 +72,7 @@ public class DbDataService {
                 entity.setCode(cursor.getString(cursor.getColumnIndex("code")));
                 entity.setBaudrate(cursor.getInt(cursor.getColumnIndex("baud_rate")));
                 entity.setSeq(cursor.getInt(cursor.getColumnIndex("seq")));
+                entity.setState(cursor.getInt(cursor.getColumnIndex("state")));
                 list.add(entity);
                 map.put(cursor.getString(cursor.getColumnIndex("seq")),entity);
             } while (cursor.moveToNext());
@@ -128,7 +124,7 @@ public class DbDataService {
         LocalData.Cache_protocollist = Cache_protocollist;
         return list;
     }
-
+    //获取设备信息
     public List<DevEntity> getDev() {
         Map<String,List<DevEntity>> Cache_devlist = new HashMap<>();
         Map<String,DevEntity> Cache_all_devlist = new HashMap<>();
@@ -171,46 +167,8 @@ public class DbDataService {
         return list;
     }
 
-    public List<DevEntity> getDev(String spNo) {
-        List<DevEntity> list = new ArrayList<>();
-        Cursor cursor = db.rawQuery("select * from dev where spNo = "+spNo+" order by sp_code,seq", null);
-        if(cursor.moveToFirst()) {
-            do{
-                DevEntity entity = new DevEntity();
-                entity.setId(cursor.getInt(cursor.getColumnIndex("id")));
-                entity.setTypeCode(cursor.getString(cursor.getColumnIndex("type_code")));
-                entity.setProtocolCode(cursor.getString(cursor.getColumnIndex("protocol_code")));
-                entity.setName(cursor.getString(cursor.getColumnIndex("name")));
-                entity.setCode(cursor.getString(cursor.getColumnIndex("code")));
-                entity.setSpNo(cursor.getString(cursor.getColumnIndex("sp_no")));
-                entity.setSpCode(cursor.getString(cursor.getColumnIndex("sp_code")));
-                entity.setOnlineFlag(cursor.getString(cursor.getColumnIndex("online_flag")));
-                entity.setSeq(cursor.getInt(cursor.getColumnIndex("seq")));
-                entity.setLostTimes(0);
-                list.add(entity);
-            } while (cursor.moveToNext());
-        }
-        return list;
-    }
 
-    public DevEntity getDevByName(String devName) {
-        DevEntity entity = null;
-        Cursor cursor = db.rawQuery("select * from dev where name=? order by sp_code,seq", new String[]{devName});
-        if(cursor.moveToFirst()) {
-            entity = new DevEntity();
-            entity.setId(cursor.getInt(cursor.getColumnIndex("id")));
-            entity.setTypeCode(cursor.getString(cursor.getColumnIndex("type_code")));
-            entity.setProtocolCode(cursor.getString(cursor.getColumnIndex("protocol_code")));
-            entity.setName(cursor.getString(cursor.getColumnIndex("name")));
-            entity.setCode(cursor.getString(cursor.getColumnIndex("code")));
-            entity.setSpNo(cursor.getString(cursor.getColumnIndex("sp_no")));
-            entity.setSpCode(cursor.getString(cursor.getColumnIndex("sp_code")));
-            entity.setOnlineFlag(cursor.getString(cursor.getColumnIndex("online_flag")));
-            entity.setSeq(cursor.getInt(cursor.getColumnIndex("seq")));
-        }
-        cursor.close();
-        return entity;
-    }
+    //获取设备信息
     public DevEntity getDevByCode(String devCode) {
         DevEntity entity = null;
         Cursor cursor = db.rawQuery("select * from dev where code=? order by sp_code,seq", new String[]{devCode});
@@ -230,7 +188,7 @@ public class DbDataService {
         return entity;
     }
 
-
+    //获取设备子集
     public List<InstructionEntity> getInstruction() {
         Map<String,List<InstructionEntity>> Cache_instructionlist = new HashMap<>();
         List<InstructionEntity> list = new ArrayList<>();
@@ -262,7 +220,7 @@ public class DbDataService {
         LocalData.Cache_instructionlist = Cache_instructionlist;
         return list;
     }
-
+    //获取设备解析规则
     public List<ResultEntity> getResult() {
         Map<String,List<ResultEntity>> Cache_resultlist = new HashMap<>();
         List<ResultEntity> list = new ArrayList<>();
@@ -303,7 +261,7 @@ public class DbDataService {
         LocalData.Cache_resultlist = Cache_resultlist;
         return list;
     }
-
+    //获取设备值屏蔽
     public List<FieldDisplayEntity> getFieldDisplay() {
         Map<String,List<FieldDisplayEntity>> Cache_fieldDisplaylist = new HashMap<>();
         Map<String,FieldDisplayEntity> Cache_all_fieldDisplaylist = new HashMap<>();
@@ -389,7 +347,7 @@ public class DbDataService {
         cursor.close();
         return list;
     }
-
+    //获取设备告警
     public List<WarnHisEntity> getWarnHisByDev(String devCode) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         List<WarnHisEntity> list = new ArrayList<>();
@@ -415,7 +373,7 @@ public class DbDataService {
         cursor.close();
         return list;
     }
-
+    //获取系统参数
     public List<SysParamEntity> getSysParam() {
         Map<String,SysParamEntity> Cache_sysparamlist = new HashMap<>();
         List<SysParamEntity> list = new ArrayList<>();
@@ -438,26 +396,31 @@ public class DbDataService {
         LocalData.Cache_sysparamlist = Cache_sysparamlist;
         return list;
     }
-
+    //获取设备操作选项
     public List<DevOptEntity> getDevOpt() {
+        Map<String,DevOptEntity> Cache_devoptlist = new HashMap<>();
         List<DevOptEntity> list = new ArrayList<>();
         Cursor cursor = db.rawQuery("select * from dev_opt", null);
         if(cursor.moveToFirst()) {
             do{
+                String opt_code = cursor.getString(cursor.getColumnIndex("opt_code"));
+                String protocol_code = cursor.getString(cursor.getColumnIndex("protocol_code"));
                 DevOptEntity entity = new DevOptEntity();
                 entity.setId(cursor.getInt(cursor.getColumnIndex("id")));
-                entity.setProtocolCode(cursor.getString(cursor.getColumnIndex("protocol_code")));
-                entity.setOptCode(cursor.getString(cursor.getColumnIndex("opt_code")));
+                entity.setProtocolCode(protocol_code);
+                entity.setOptCode(opt_code);
                 entity.setOptName(cursor.getString(cursor.getColumnIndex("opt_name")));
                 entity.setOptValue(cursor.getString(cursor.getColumnIndex("opt_value")));
                 list.add(entity);
+                Cache_devoptlist.put(protocol_code+opt_code,entity);
             } while (cursor.moveToNext());
         }
         cursor.close();
         LocalData.devoptlist = list;
+        LocalData.Cache_devoptlist = Cache_devoptlist;
         return list;
     }
-
+    //获取协议子集
     public List<DevOptEntity> getDevOptByProtocol(String protocol) {
         List<DevOptEntity> list = new ArrayList<>();
         Cursor cursor = db.rawQuery("select * from dev_opt where protocol_code=?", new String[]{protocol});
@@ -475,7 +438,7 @@ public class DbDataService {
         cursor.close();
         return list;
     }
-
+    //添加告警信息
     public void addWarn(WarnHisEntity warnHisEntity) {
         db.execSQL("insert into warn_his(dev_name,dev_type,warn_title,warn_content,create_time) values(?,?,?,?,?)",
                 new String[]{warnHisEntity.getDevName(),warnHisEntity.getDevType(),warnHisEntity.getWarnTitle(),warnHisEntity.getWarnContent(),sdf.format(warnHisEntity.getCreateTime())});
@@ -496,7 +459,7 @@ public class DbDataService {
         }
         cursor.close();
     }
-
+    //添加设备
     public int addDevice(DevEntity entity) {
         Cursor cursor = db.rawQuery("select * from dev where name='"+entity.getName()+"'", null);
         if(cursor.moveToFirst()) {
@@ -508,31 +471,31 @@ public class DbDataService {
             return 1;
         }
     }
-
+    //添加设备数据到历史
     public void addDataHis(DataHisEntity entity) {
         db.execSQL("insert into data_his(sp_code,dev_code,dev_name,msg,create_time) values(?,?,?,?,?)",
                 new String[]{entity.getSpCode(),entity.getDevCode(),entity.getDevName(),entity.getMsg(),sdf.format(entity.getCreateTime())});
     }
-
+    //删除设备
     public void deleteDevice(String deviceCode) {
         db.execSQL("delete from dev where code='"+deviceCode+"'");
     }
-
+    //设置串口波特率
     public void updateBaudrate(int baudrate, int seq) {
         db.execSQL("update sp set baud_rate="+baudrate+" where seq="+seq);
     }
-
+    //设置串口状态
+    public void updateSerialPortState(int state, int seq) {
+        db.execSQL("update sp set state="+state+" where seq="+seq);
+    }
+    //升级opt选项
     public void updateParamValue(String paramName, String paramValue) {
         db.execSQL("update sys_param set param_value='"+paramValue+"' where param_name='"+paramName+"'");
     }
-
-    public void updateDevOnlineFlag(String deviceCode, RuleEnum.OnOffFlag onOffFlag) {
-        db.execSQL("update dev set online_flag='"+onOffFlag.toString()+"' where code='"+deviceCode+"'");
-    }
-
+    //获取历史参数
     public List<DataHisEntity> getHisDataByDevcode(String devcode) {
         List<DataHisEntity> list = new ArrayList<>();
-        Cursor cursor = db.rawQuery("select * from data_his where dev_code=? order by create_time desc", new String[]{devcode});
+        Cursor cursor = db.rawQuery("select * from data_his where dev_code=? order by create_time desc limit 50", new String[]{devcode});
         if(cursor.moveToFirst()) {
             do{
                 DataHisEntity entity = new DataHisEntity();
@@ -558,10 +521,10 @@ public class DbDataService {
     private void initDbData() {
 
         //sp
-        db.execSQL("insert into sp(code,seq,baud_rate) values ('SerialPort1','1','2400')");
-        db.execSQL("insert into sp(code,seq,baud_rate) values ('SerialPort2','2','19200')");
-        db.execSQL("insert into sp(code,seq,baud_rate) values ('SerialPort3','3','9600')");
-        db.execSQL("insert into sp(code,seq,baud_rate) values ('SerialPort4','4','9600')");
+        db.execSQL("insert into sp(code,seq,baud_rate,state) values ('SerialPort1','1','2400',0)");
+        db.execSQL("insert into sp(code,seq,baud_rate,state) values ('SerialPort2','2','19200',0)");
+        db.execSQL("insert into sp(code,seq,baud_rate,state) values ('SerialPort3','3','9600',0)");
+        db.execSQL("insert into sp(code,seq,baud_rate,state) values ('SerialPort4','4','9600',0)");
 
         //type
         db.execSQL("insert into type(name,code) values ('UPS','ups')");
@@ -868,6 +831,7 @@ public class DbDataService {
         //sys_param
         db.execSQL("insert into sys_param(param_name,param_value) values('http_uri','http://192.168.1.119:81/Api')");
         db.execSQL("insert into sys_param(param_name,param_value) values('websocket_uri','http://192.168.1.119:81')");
+        db.execSQL("insert into sys_param(param_name,param_value) values('webConnect','false')");
         db.execSQL("insert into sys_param(param_name,param_value) values('main_query','10000')");
         db.execSQL("insert into sys_param(param_name,param_value) values('handle_wait_slim','500')");
 

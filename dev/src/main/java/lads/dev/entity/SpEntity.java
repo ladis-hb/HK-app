@@ -5,6 +5,7 @@ public class SpEntity {
     private String code;
     private int baudrate;
     private int seq;
+    private int state;
 
     public int getId() {
         return id;
@@ -36,5 +37,11 @@ public class SpEntity {
 
     public void setBaudrate(int baudrate) {
         this.baudrate = baudrate;
+    }
+
+    public void setState(int state){this.state = state;}
+
+    public int getState(){
+        return this.state;
     }
 }

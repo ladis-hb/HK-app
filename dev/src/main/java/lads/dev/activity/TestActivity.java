@@ -114,7 +114,7 @@ public class TestActivity extends AppCompatActivity {
     private int readSp(byte[] bytes, String devCode, int step, String readType, String protocol, List<InstructionEntity> instructionlist) {
         int ret=0;
         RecvDataDto recvDataDto = new RecvDataDto();
-        ret = serialPortUtils3.readOvertime(bytes, devCode, readType, recvDataDto);
+        //ret = serialPortUtils3.readOvertime(bytes, devCode, readType, recvDataDto).getRet();
         handleRecvData(recvDataDto.getBytes(), recvDataDto.getCount(), step, devCode, protocol, instructionlist);
 //        serialPortUtils3.sendData(bytes,step,readType);
 //        serialPortUtils3.recvDataWithOvertime();

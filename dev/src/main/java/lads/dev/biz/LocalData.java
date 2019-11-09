@@ -2,8 +2,10 @@ package lads.dev.biz;
 
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import lads.dev.dto.DevUpsDto;
 import lads.dev.entity.DevEntity;
@@ -54,5 +56,12 @@ public class LocalData {
     public static Map<String,FieldDisplayEntity> Cache_all_fieldDisplaylist;
     //缓存sys配置
     public static  Map<String,SysParamEntity> Cache_sysparamlist;
+    //缓存操作指令
+    //<protocol_code+opt_code,devoptentity>
+    public static Map<String,DevOptEntity> Cache_devoptlist;
+
+    //构造list，存储打开的端口号，
+    public  static Set<String> Cache_Open_SpNo = new HashSet<>();
+
 
 }

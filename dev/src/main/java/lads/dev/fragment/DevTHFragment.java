@@ -1,12 +1,15 @@
 package lads.dev.fragment;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -29,9 +32,11 @@ import lads.dev.activity.AddThActivity;
 import lads.dev.activity.HisDataActivity;
 import lads.dev.biz.DbDataService;
 import lads.dev.biz.LocalData;
+import lads.dev.entity.BroadcastArguments;
 import lads.dev.entity.DevEntity;
 import lads.dev.entity.KeyValueEntity;
 import lads.dev.entity.ViewEntity;
+import lads.dev.utils.MyApplication;
 import lads.dev.utils.MyDatabaseHelper;
 import lads.dev.utils.MyUtil;
 import lads.dev.viewadapter.DevAdapter;
@@ -97,6 +102,8 @@ public class DevTHFragment extends Fragment {
     Button btnRefresh,btnHistory;
     TextView txtInfo;
     DbDataService dbDataService;
+    //list
+    List<DevEntity> devlist= new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -136,7 +143,24 @@ public class DevTHFragment extends Fragment {
         });
         loadTh();
         showDevInfo();
-        timer.schedule(task, 1000,1000);
+        //定义广播接受器
+        LocalBroadcastManager localBroadcastManager;
+        IntentFilter intentFilter;
+        intentFilter = new IntentFilter();
+        //添加监听事件
+        intentFilter.addAction(BroadcastArguments.getTh());
+        //构造事件处理函数
+        BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Toast.makeText(getContext(),intent.getStringExtra("devid"),Toast.LENGTH_LONG).show();
+                showDevInfo();
+            }
+        };
+        //挂载广播器实例
+        localBroadcastManager = LocalBroadcastManager.getInstance(MyApplication.getContext());
+        //注册监听到实例
+        localBroadcastManager.registerReceiver(broadcastReceiver,intentFilter);
         return view;
     }
 
@@ -144,6 +168,7 @@ public class DevTHFragment extends Fragment {
         List<KeyValueEntity> list = new ArrayList<>();
         for(DevEntity entity : LocalData.devlist) {
             if(entity.getTypeCode().equals("th")) {
+                devlist.add(entity);
                 KeyValueEntity kv = new KeyValueEntity(entity.getCode(), entity.getName());
                 list.add(kv);
             }
@@ -172,50 +197,21 @@ public class DevTHFragment extends Fragment {
     }
 
     private void showDevInfo() {
-
         String str="";
-        for(DevEntity entity : LocalData.devlist) {
-            if(entity.getTypeCode().equals("th")) {
-                String devcode = entity.getCode();
-                Map<String, ViewEntity> map = LocalData.devDataMap.get(devcode);
-                if(map!=null) {
-                    StringBuffer sb = new StringBuffer();
+        for (DevEntity entity:devlist){
+            Map<String, ViewEntity> map = LocalData.devDataMap.get(entity.getCode());
+            if(map!=null) {
+                StringBuffer sb = new StringBuffer();
                 sb.append("设备名称: "+entity.getName()+"\n");
                 for(String key : map.keySet()) {
                     ViewEntity ve = map.get(key);
                     sb.append(key+":"+ve.getValue()+", ");
                 }
                 str+=sb.toString()+newLine+"\n";
-                }
             }
         }
-        //Log.e(TAG,str);
         txtInfo.setText(str);
     }
-
-    Timer timer = new Timer();
-    TimerTask task = new TimerTask() {
-        public void run() {
-            Message message = new Message();
-            message.what = 1;
-            handler.sendMessage(message);
-        }
-    };
-    final Handler handler = new Handler() {
-        public void handleMessage(Message msg) {
-            //Log.d(TAG,"th handleMessage");
-            switch (msg.what) {
-                case 1:
-                    update();
-                    break;
-            }
-            super.handleMessage(msg);
-        }
-        void update() {
-            //Log.d(TAG,"th handleMessage");
-            showDevInfo();
-        }
-    };
 
     // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {

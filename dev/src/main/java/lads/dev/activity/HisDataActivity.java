@@ -61,35 +61,22 @@ public class HisDataActivity extends AppCompatActivity {
 
     private void loadHisData() {
         List<KeyValueEntity> list = new ArrayList<>();
-        List<DataHisEntity> list2 = dbDataService.getHisDataByDevcode(devCode);
-        for(int i=0; i<list2.size(); i++) {
-            String createTime = sdf.format(list2.get(i).getCreateTime());
-            String msg = list2.get(i).getMsg();
+        for(DataHisEntity dataHisEntity:dbDataService.getHisDataByDevcode(devCode)){
+            String createTime = sdf.format(dataHisEntity.getCreateTime());
+            String msg = dataHisEntity.getMsg();
             String s = "";
-            if(msg.length()>100) {
-                s = msg.substring(0, 99);
-            }
-            DataHisEntity dataHisEntity = new DataHisEntity();
+            if(msg.length()>50) s = msg.substring(0, 50);
             KeyValueEntity kv = new KeyValueEntity(createTime, s, msg);
             list.add(kv);
         }
-
-//        for(int i=0;i<100;i++) {
-//            KeyValueEntity kv = new KeyValueEntity("2019-10-11 12:05:11", "[2019-10-11 12:05:11]{elec:12,voltage:23}...","aaaaaaaa");
-//            list.add(kv);
-//        }
-
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         HisDataAdapter hisDataAdapter = new HisDataAdapter(this, list);
         hisDataAdapter.setHisDataAdapterCallback(new HisDataAdapter.HisDataAdapterCallback() {
             @Override
             public void itemClick(String msg) {
-
-                Log.d(TAG, msg+" itemClick");
                 showInfo(msg);
             }
-
         });
         recyclerView.setAdapter(hisDataAdapter);
     }

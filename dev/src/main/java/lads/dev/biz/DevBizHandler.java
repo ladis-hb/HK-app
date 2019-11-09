@@ -1,22 +1,31 @@
 package lads.dev.biz;
-
 import android.content.Context;
-import android.os.Handler;
-import android.os.Message;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.logging.Handler;
 
-import android_serialport_api.SerialPort;
 import lads.dev.dto.DevUpsDto;
 import lads.dev.dto.RecvDataDto;
+import lads.dev.entity.BroadcastArguments;
 import lads.dev.entity.DevEntity;
 import lads.dev.entity.DevOptHisEntity;
 import lads.dev.entity.FieldDisplayEntity;
@@ -29,6 +38,7 @@ import lads.dev.entity.ViewEntity;
 import lads.dev.entity.WarnCfgEntity;
 import lads.dev.entity.WarnHisEntity;
 import lads.dev.utils.ChangeTool;
+import lads.dev.utils.MyApplication;
 import lads.dev.utils.MyDatabaseHelper;
 import lads.dev.utils.MyUtil;
 import lads.dev.utils.SerialPortUtils;
@@ -56,7 +66,7 @@ public class DevBizHandler implements Runnable  {
     //
     List<DevOptHisEntity> devOptList = new ArrayList<>();
     //每个串口执行查询的间隔，默认为10秒
-    int main_query = LocalData.Cache_sysparamlist.containsKey("main_query")?Integer.parseInt(LocalData.Cache_sysparamlist.get("main_query").getParamValue()):10000;
+    int main_query = LocalData.Cache_sysparamlist.containsKey("main_query")?Integer.parseInt(LocalData.Cache_sysparamlist.get("main_query").getParamValue()):15000;
     //每个查询线程等待秒数，查询过快容易丢失返回数据,测试最低400，默认为500
     int handle_wait_slim = LocalData.Cache_sysparamlist.containsKey("handle_wait_slim")?Integer.parseInt(LocalData.Cache_sysparamlist.get("handle_wait_slim").getParamValue()):500;
 
@@ -65,130 +75,72 @@ public class DevBizHandler implements Runnable  {
      * 0=initial,1=timer task,2=operating task
      */
     private int flagTimerRead = 0;
-    //flagSpRun true运行串口
-    private boolean flagSpRun = false; //serialport service running flag
 
-    public DevBizHandler(Context ctx, SerialPortUtils serialPortUtils, String spNo) {
-        this.serialPortUtils = serialPortUtils;
-        this.spNo = spNo;
-        this.mContext = ctx;
-        dbHelper = new MyDatabaseHelper(ctx, 2);
-        dataService = new DbDataService(dbHelper.getDb());
-        spCode = LocalData.Cache_splist.get(spNo).getCode();
+    //格式化字符串
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    //定义广播manager
+    private LocalBroadcastManager localBroadcastManager;
+    //
+    ExecutorService exec = Executors.newSingleThreadExecutor();
+
+    public DevBizHandler() {
+        this.mContext = MyApplication.getContext();
+        //this.serialPortUtils = serialPortUtils;
+        this.localBroadcastManager = LocalBroadcastManager.getInstance(this.mContext);
+        this.dbHelper = new MyDatabaseHelper(this.mContext, 2);
+        this.dataService = new DbDataService(dbHelper.getDb());
     }
-
-    Timer timer = new Timer();
-    TimerTask task = new TimerTask() {
-        public void run() {
-            if(flagSpRun) {
-                bizHandle();
-                Log.d(TAG, spNo+", ~~~~~~~~~~~~~~~~~~~~~,"+new Date().toString());
-            }
-
-        }
-    };
 
     @Override
     public void run() {
+        //休眠10秒，等待主进程任务完成
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         try{
-            timer.schedule(task, 1000, main_query);
+            TimerTask task = new TimerTask() {
+                public void run() {
+                    //迭代打开的端口
+                    Log.e(TAG,"开始迭代设备，查询参数");
+                    for(SpEntity spEntity:LocalData.splist){
+                        if(spEntity != null && spEntity.getState() == 1){
+                            Log.e(TAG,"打开的串口："+spEntity.toString());
+                            bizHandle(String.valueOf(spEntity.getSeq()));
+                        }
+                    }
+                }
+            };
+            new Timer().schedule(task, 1000, main_query);
         } catch (Exception e) {
             onThrowErrorListener.OnThrowError("biz error，"+e.getMessage());
         }
     }
 
-    public void addDevOpt(DevOptHisEntity devOptHisEntity) {
-        devOptList.add(devOptHisEntity);
-
-        if(flagTimerRead == 0) {
-            flagTimerRead=2;
-            int count = devOptList.size();
-            for(int i=count-1;i>0;i--) {
-                DevOptHisEntity e = devOptList.get(i);
-                String devCode = devOptHisEntity.getDevCode();
-                String protocolCode="";
-                String readType="";
-                for(DevEntity devEntity : LocalData.devlist) {
-                    if(devEntity.getCode().equals(devCode)) {
-                        protocolCode=devEntity.getProtocolCode();
-                        break;
-                    }
-                }
-                if(MyUtil.isStringEmpty(protocolCode)) {
-                    return;
-                }
-
-                List<InstructionEntity> instructionlist = new ArrayList<>();
-                for(InstructionEntity a : LocalData.instructionlist) {
-                    if(a.getProtocolCode().equals(protocolCode)) {
-                        instructionlist.add(a);
-                    }
-                }
-                for(ProtocolEntity protocolEntity : LocalData.protocollist) {
-                    if(protocolEntity.getCode().equals(protocolCode)) {
-                        readType = protocolEntity.getReadType();
-                        break;
-                    }
-                }
-                if(MyUtil.isStringEmpty(readType)) {
-                    return;
-                }
-                String msg = e.getOptValue();
-                byte[] bytes = ChangeTool.HexToByteArr(msg);
-
-            }
-            flagTimerRead=0;
-        }
-    }
-    //串口
-    private String spNo;
-    //SerialPort*
-    private String spCode;
-    //设备编码
-    private String deviceCode="";
-    //设备名
-    private String devname="";
-    //设备类型
-    private String devtype="";
-
-    //格式化字符串
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    //
-    private void bizHandle() {
-        if(flagTimerRead != 0) {
-            try {
-                //Log.d(TAG, "operating thread running, waiting ...");
-                Thread.sleep(200);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        flagTimerRead=1;
-        /*List<DevEntity> devlist = new ArrayList<>();
-
-        for(DevEntity entity : LocalData.devlist) {
-            if(entity.getSpNo().equals(spNo)) {
-                devlist.add(entity);
-            }
-        }*/
-        //如果串口没有设备直接退出
+    private void bizHandle(String spNo) {
+              //如果串口没有设备直接退出
         if(!LocalData.Cache_devlist.containsKey(spNo)) return;
         List<DevEntity> devlist = LocalData.Cache_devlist.get(spNo);
-        Log.d(TAG,devlist.get(0).getTypeCode()+"#####（1)设备数:"+devlist.size());
+        if(devlist.size() == 0) return;
+        Log.d(TAG,"串口:"+spNo+"#####（1)设备数:"+devlist.size());
+
+        //初始化SerialPort
+        SerialPortUtils serialPortUtils = new SerialPortUtils();
+        serialPortUtils.openSerialPort(Integer.parseInt(spNo),LocalData.Cache_splist.get(spNo).getBaudrate());
 
         //进入第一个循环，迭代一个串口上挂载的所有设备
-        for(DevEntity entity : devlist) {
-
+        for(int i=0;i<devlist.size();i++) {
+            DevEntity entity = devlist.get(i);
             List<InstructionEntity> instructionlist = LocalData.Cache_instructionlist.get(entity.getProtocolCode());
             Log.d(TAG,"设备名称："+entity.getName()+"设备id:"+entity.getCode()+"#####（1)指令集条数:"+instructionlist.size());
             //进入第二个循环，迭代协议指令集，每条指令集发送查询
-
             for(InstructionEntity instructionEntity : instructionlist) {
                 //执行指令前等待，执行过快会丢失数据
                 try{
-                    Thread.sleep(handle_wait_slim);
+                    //Thread.sleep(handle_wait_slim);
                 } catch (Exception e) {
-                    Log.d(TAG,"handle_wait_slim error#################################");
+                    //Log.d(TAG,"handle_wait_slim error#################################");
                 }
                 //一般不会进入这个if
                 /*if(devOptList.size()>0) { //handle instant device setting
@@ -204,38 +156,20 @@ public class DevBizHandler implements Runnable  {
                         devOptList.remove(i); // remove command
                     }
                 }*/
-
                 //优化流程，直接传递deventity
-                new Thread(new c1(instructionEntity,instructionlist,entity)).start();
+                readSp(instructionEntity,entity,spNo,i,serialPortUtils);
             }
         }
-        flagTimerRead = 0;
-    }
+        //close SerialPort
+        serialPortUtils.closeSerialPort();
 
-    class c1 implements Runnable{
-        private List<InstructionEntity> instructionlist;
-        private InstructionEntity instructionEntity;
-        private DevEntity entity;
-        public c1(InstructionEntity instructionEntity,List<InstructionEntity> instructionlist,DevEntity entity){
-            //指令集列表
-            this.instructionlist = instructionlist;
-            this.entity = entity;
-            this.instructionEntity = instructionEntity;
-        }
-        @Override
-        public void run(){
-            readSp(instructionEntity,instructionlist,entity);
-        }
     }
-
-    private int readSp(InstructionEntity instructionEntity,List<InstructionEntity> instructionlist,DevEntity entity) {
-        //定义默认返回值
-        int ret=0;
+    //发送查询指令
+    private void readSp(InstructionEntity instructionEntity,DevEntity entity,String spNo,int i,SerialPortUtils serialPortUtils) {
         //
         RecvDataDto recvDataDto = new RecvDataDto();
         //获取指令数据字符串
         String instructionStr = instructionEntity.getStr();
-
         //格式化指令为16进制
         byte[] bytes=ChangeTool.HexToByteArr(instructionStr);
         //获取指令步进，ups1-6，其它都是1
@@ -248,44 +182,65 @@ public class DevBizHandler implements Runnable  {
         String readType=LocalData.Cache_protocollist.get(protocol).getReadType();
         Log.d(TAG, "====---===deviceCode:"+devCode+",instructionStr:"+instructionStr);
         //发送查询指令
-        ret = serialPortUtils.readOvertime(bytes, devCode, readType, recvDataDto);
-        if(ret == -1) {
-            Log.e(TAG, entity.getName()+" offline-------------------------------------------------");
-            //remove offline device
-            for(DevEntity e:LocalData.Cache_devlist.get(spNo)){
-                if(e.getCode().equals(devCode)) {
-                    e.setLostTimes(e.getLostTimes()+1);
-                    if(e.getLostTimes()>=5) { //5次连接不上就判断设备掉线
-                        LocalData.devlist.remove(e);
-                        LocalData.Cache_devlist.get(spNo).remove(e);
-                        //设备掉线告警
-                        WarnHisEntity warnHisEntity = new WarnHisEntity();
-                        warnHisEntity.setCreateTime(new Date());
-                        warnHisEntity.setDevCode(e.getCode());
-                        warnHisEntity.setDevName(e.getName());
-                        warnHisEntity.setDevType(e.getTypeCode());
-                        warnHisEntity.setWarnTitle("设备掉线");
-                        warnHisEntity.setWarnContent("设备掉线");
-                        dataService.addWarn_DeviceOffline(warnHisEntity);
-                    }
-                    break;
-                }
+        //申明RecvDataDto
+         RecvDataDto result = new RecvDataDto();
+         //申请线程池
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        //构造Call对象，把serialport发送指令存入call
+        Callable<RecvDataDto> readTask = new Callable<RecvDataDto>() {
+            @Override
+            public RecvDataDto call() throws Exception {
+                return serialPortUtils.readData(bytes, readType);
+            }
+        };
+        //把call对象加入线程池队列
+        Future<RecvDataDto> future = executorService.submit(readTask);
+        //运行线程池，超时和报错都将ret设为-1，运行正常则返回RecvDataDto对象
+        try {
+            result = future.get(5000, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            result.setRet(-1);
+        } catch (Exception e) {
+            result.setRet(-1);
+        } finally{
+            future.cancel(true);
+            executorService.shutdown();
+        }
+
+        //获取设备对象信息
+        DevEntity devEntity =LocalData.Cache_devlist.get(spNo).get(i);
+        //判断ret，如果=-1，且次数达到5次，加入错误列表，如果没有，重置错误计数器，继续流程
+        if(result.getRet() == -1) {
+            Log.e(TAG, entity.getName()+" offline----");
+            devEntity.setLostTimes(entity.getLostTimes()+1);
+            //5次连接不上就判断设备掉线
+            if(devEntity.getLostTimes() >4){
+                //删除掉线的设备
+                LocalData.Cache_devlist.get(spNo).remove(i);
+                WarnHisEntity warnHisEntity = new WarnHisEntity();
+                warnHisEntity.setCreateTime(new Date());
+                warnHisEntity.setDevCode(devEntity.getCode());
+                warnHisEntity.setDevName(devEntity.getName());
+                warnHisEntity.setDevType(devEntity.getTypeCode());
+                warnHisEntity.setWarnTitle("设备掉线");
+                warnHisEntity.setWarnContent("设备掉线");
+                dataService.addWarn_DeviceOffline(warnHisEntity);
             }
         } else
             {
-            for(DevEntity e :LocalData.Cache_devlist.get(spNo)) {
-                if(e.getCode().equals(devCode)) {
-                    e.setLostTimes(0);
-                    break;
-                }
-            }
+            devEntity.setLostTimes(0);
             //解析数据recvDataDto，
-            handleRecvData(recvDataDto,instructionEntity,instructionlist,entity);
+                RecvDataDto finalResult = result;
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        handleRecvData(finalResult,instructionEntity,entity);
+                    }
+            }).start();
         }
-        return ret;
     }
-
-    private void handleRecvData(RecvDataDto recvDataDto,InstructionEntity instructionEntity,List<InstructionEntity> instructionlist,DevEntity entity){//byte[] buffer, int size, int step, String devCode, String protocol1, List<InstructionEntity> instructionlist1)  {
+    //解析数据recvDataDto，
+    private void handleRecvData(RecvDataDto recvDataDto,InstructionEntity instructionEntity,DevEntity entity){//byte[] buffer, int size, int step, String devCode, String protocol1, List<InstructionEntity> instructionlist1)  {
         //获取设备id
         String devCode=entity.getCode();
         Log.d(TAG,"####        onDataReceive             （1)设置数据，deviceCode:"+devCode);
@@ -319,7 +274,7 @@ public class DevBizHandler implements Runnable  {
         //如果是ascii码
         if(resultType.equals(RuleEnum.RuleStep1.ASCII.toString())) {
             try {
-                resultMap= handleData_str(instructionCode, arr, rule, resultItemList, buffer, size, encoding);
+                resultMap= handleData_str(instructionCode, arr, rule, resultItemList, buffer, size, encoding,entity);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -336,7 +291,7 @@ public class DevBizHandler implements Runnable  {
             int end = size-leftTrim-rightTrim;
             System.arraycopy(buffer, leftTrim, bytes, 0, end);
             try {
-                resultMap=  handleData_number(resultItemList, bytes);
+                resultMap=  handleData_number(resultItemList, bytes,entity);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -348,7 +303,7 @@ public class DevBizHandler implements Runnable  {
         //存放指令查询到的数据,判断devMap有devcode，没有就新建
         resultDisplay = new HashMap<>();
         StringBuffer sb = new StringBuffer();
-        Log.e(TAG,resultMap.toString()+"--------------");
+       // Log.e(TAG,resultMap.toString()+"--------------");
 
         for(String key:resultMap.keySet()){
             try {
@@ -383,13 +338,29 @@ public class DevBizHandler implements Runnable  {
                     LocalData.devDataMap.put(devCode, resultDisplay);
                     break;
         }
-
-        Log.d(TAG, "+++++++"+devCode+"："+resultDisplay.toString());
-
-
+        //根据不同的类型发送广播
+        Intent intent = new Intent(BroadcastArguments.getUpdate());
+        switch (entity.getTypeCode()){
+            case "ups":
+                intent = new Intent(BroadcastArguments.getUps());
+                break;
+            case "ac":
+                intent = new Intent(BroadcastArguments.getAc());
+                break;
+            case "em":
+                intent = new Intent(BroadcastArguments.getEm());
+                break;
+            case "th":
+                intent = new Intent(BroadcastArguments.getTh());
+                break;
+        }
+        //广播携带设备id
+        Log.e(TAG,"广播指令一发送，id:"+devCode);
+        intent.putExtra("devid",devCode);
+        localBroadcastManager.sendBroadcast(intent);
     }
 
-    private Map<String, String> handleData_number(List<ResultEntity> resultItemList, byte[] bytes) throws Exception {
+    private Map<String, String> handleData_number(List<ResultEntity> resultItemList, byte[] bytes,DevEntity entity) throws Exception {
         Map<String, String> resultMap = new HashMap<>();
 
             for(ResultEntity resultItemEntity:resultItemList) {
@@ -457,10 +428,10 @@ public class DevBizHandler implements Runnable  {
                             }
                             WarnHisEntity warnHisEntity = new WarnHisEntity();
                             warnHisEntity.setWarnTitle(warnDesc);
-                            warnHisEntity.setWarnContent("Device name: "+devname+", "+warnDesc+" "+sdf.format(now));
-                            warnHisEntity.setDevCode(deviceCode);
-                            warnHisEntity.setDevName(devname);
-                            warnHisEntity.setDevType(devtype);
+                            warnHisEntity.setWarnContent("Device name: "+entity.getName()+", "+warnDesc+" "+sdf.format(now));
+                            warnHisEntity.setDevCode(entity.getCode());
+                            warnHisEntity.setDevName(entity.getName());
+                            warnHisEntity.setDevType(entity.getTypeCode());
                             warnHisEntity.setCreateTime(now);
                             dataService.addWarn(warnHisEntity);
                         }
@@ -472,7 +443,7 @@ public class DevBizHandler implements Runnable  {
         return resultMap;
     }
 
-    private Map<String, String> handleData_str(String instructionCode, String[] arr, String rule, List<ResultEntity> resultItemList, byte[] bytes, int size, String encoding) throws Exception {
+    private Map<String, String> handleData_str(String instructionCode, String[] arr, String rule, List<ResultEntity> resultItemList, byte[] bytes, int size, String encoding,DevEntity entity) throws Exception {
         Map<String, String> resultMap = new HashMap<>();
         String[] arr3;
         // 1.get string
@@ -495,7 +466,7 @@ public class DevBizHandler implements Runnable  {
         String splitType = arr[2].split("=")[1];
 
         if(splitType.equals(RuleEnum.RuleStep3.LEN.toString())) {
-            handleData_str_len(instructionCode, resultStr, resultItemList, resultMap);
+            handleData_str_len(instructionCode, resultStr, resultItemList, resultMap,entity);
         } else if(splitType.contains(RuleEnum.RuleStep3.SPLIT.toString())) {
             String splitSymbol = "";
             arr3 = splitType.split("_");
@@ -534,14 +505,14 @@ public class DevBizHandler implements Runnable  {
                 }
                 // handle warn data
                 if(e.getWarnType().equals(RuleEnum.WarnType.UPPER_LOWER_LIMITS.toString()) || e.getWarnType().equals(RuleEnum.WarnType.WARN_CONFIG.toString())) {
-                    //handleWarn_str(instructionCode, e, arrResult[i]);
-                   new Thread(new Warn_query(instructionCode, e, arrResult[i])).start();
+                    handleWarn_str(instructionCode, e, arrResult[i],entity);
+                   //new Thread(new Warn_query(instructionCode, e, arrResult[i])).start();
                 }
             }
         }
         return resultMap;
     }
-    //新线程执行ups错误告警
+    /*//新线程执行ups错误告警
     class Warn_query implements Runnable{
         private String instructionCode;
         private ResultEntity e;
@@ -556,9 +527,9 @@ public class DevBizHandler implements Runnable  {
         public void run(){
             handleWarn_str(instructionCode, e, fieldValue);
         }
-    }
+    }*/
 
-    private void handleData_str_len(String instructionCode, String resultStr, List<ResultEntity> resultItemList, Map<String, String> resultMap) {
+    private void handleData_str_len(String instructionCode, String resultStr, List<ResultEntity> resultItemList, Map<String, String> resultMap,DevEntity entity) {
         for(int i=0;i<resultItemList.size();i++) {
             ResultEntity resultItemEntity = resultItemList.get(i);
             String pFieldName = resultItemEntity.getFieldName();
@@ -583,11 +554,11 @@ public class DevBizHandler implements Runnable  {
                 }
             }
 
-            handleWarn_str(instructionCode, resultItemEntity, pValue);
+            handleWarn_str(instructionCode, resultItemEntity, pValue,entity);
         }
     }
 
-    private void handleWarn_str(String instructionCode, ResultEntity e, String fieldValue) {
+    private void handleWarn_str(String instructionCode, ResultEntity e, String fieldValue,DevEntity entity) {
         Map<String, String> map = new HashMap<>();
         String[] arr;
         Date now = new Date();
@@ -610,10 +581,10 @@ public class DevBizHandler implements Runnable  {
                     warnDesc = fieldName+" below lower limit";
                 }
                 warnHisEntity.setWarnTitle(warnDesc);
-                warnHisEntity.setWarnContent("Device name: "+devname+", "+warnDesc+" "+sdf.format(now));
-                warnHisEntity.setDevCode(deviceCode);
-                warnHisEntity.setDevName(devname);
-                warnHisEntity.setDevType(devtype);
+                warnHisEntity.setWarnContent("Device name: "+entity.getName()+", "+warnDesc+" "+sdf.format(now));
+                warnHisEntity.setDevCode(entity.getCode());
+                warnHisEntity.setDevName(entity.getName());
+                warnHisEntity.setDevType(entity.getTypeCode());
                 warnHisEntity.setCreateTime(now);
                 dataService.addWarn(warnHisEntity);
             }
@@ -655,10 +626,10 @@ public class DevBizHandler implements Runnable  {
                         }
                         warnDesc = map.get(warnStr); // warning desc
                         warnHisEntity.setWarnTitle(warnDesc);
-                        warnHisEntity.setWarnContent("Device name: "+devname+", "+warnDesc+" "+sdf.format(now));
-                        warnHisEntity.setDevCode(deviceCode);
-                        warnHisEntity.setDevName(devname);
-                        warnHisEntity.setDevType(devtype);
+                        warnHisEntity.setWarnContent("Device name: "+entity.getName()+", "+warnDesc+" "+sdf.format(now));
+                        warnHisEntity.setDevCode(entity.getCode());
+                        warnHisEntity.setDevName(entity.getName());
+                        warnHisEntity.setDevType(entity.getTypeCode());
                         warnHisEntity.setCreateTime(now);
                         dataService.addWarn(warnHisEntity);
                     }
@@ -666,8 +637,6 @@ public class DevBizHandler implements Runnable  {
             }
         }
     }
-
-
 
     public OnChangeViewDataListener onChangeViewDataListener;
     public static interface OnChangeViewDataListener{
@@ -685,11 +654,4 @@ public class DevBizHandler implements Runnable  {
         this.onThrowErrorListener = onThrowErrorListener;
     }
 
-    public boolean isFlagSpRun() {
-        return flagSpRun;
-    }
-
-    public void setFlagSpRun(boolean flagSpRun) {
-        this.flagSpRun = flagSpRun;
-    }
 }

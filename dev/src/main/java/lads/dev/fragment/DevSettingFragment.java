@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -14,6 +15,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 
@@ -25,8 +27,10 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.example.x6.serial.SerialPort;
 import com.github.nkzawa.emitter.Emitter;
@@ -41,11 +45,14 @@ import lads.dev.biz.DevBizHandler;
 import lads.dev.biz.LocalData;
 import lads.dev.entity.DataHisEntity;
 import lads.dev.entity.DevEntity;
+import lads.dev.entity.DevOptEntity;
+import lads.dev.entity.DevOptHisEntity;
 import lads.dev.entity.FieldDisplayEntity;
 import lads.dev.entity.InstructionEntity;
 import lads.dev.entity.ResultEntity;
 import lads.dev.entity.SpEntity;
 import lads.dev.entity.ViewEntity;
+import lads.dev.utils.DevOperate;
 import lads.dev.utils.HttpUtil;
 import lads.dev.utils.MyDatabaseHelper;
 import lads.dev.utils.MyUtil;
@@ -112,13 +119,11 @@ public class DevSettingFragment extends Fragment {
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
     }
-    EditText txtBaudrate1,txtBaudrate2,txtBaudrate3,txtBaudrate4,txtUrl,txtWebsocket,editText_wait_ups,editText_wait_query;
-    Button btnSave1,btnSave2,btnSave3,btnSave4,btnOpenPort1,btnOpenPort2,btnOpenPort3,btnOpenPort4,btnUrl,btnConfig,btnTest ,btn_all_start,btn_wait_query;
-    public static DevBizHandler devBizHandler1,devBizHandler2,devBizHandler3,devBizHandler4;
-    SerialPort serialPort1,serialPort2,serialPort3,serialPort4 ;
-    SerialPortUtils serialPortUtils1,serialPortUtils2,serialPortUtils3,serialPortUtils4;
-    private int baudrate1,baudrate2,baudrate3,baudrate4;
+    EditText txtBaudrate1,txtBaudrate2,txtBaudrate3,txtBaudrate4,txtUrl,txtWebsocket;
+    Button btnSave1,btnSave2,btnSave3,btnSave4,btnOpenPort1,btnOpenPort2,btnOpenPort3,btnOpenPort4,btnUrl,btnConfig,btnTest;
+     private int baudrate1,baudrate2,baudrate3,baudrate4;
     CheckBox cbx;
+    TextView txt_Socket_stat_info,txt_Web_stat_info;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -142,21 +147,19 @@ public class DevSettingFragment extends Fragment {
 
         //http保存按钮
         btnUrl = (Button) view.findViewById(R.id.btnUrl);
+        //txt_Socket_stat_info
+        txt_Socket_stat_info = view.findViewById(R.id.txt_Socket_stat_info);
+        txt_Web_stat_info = view.findViewById(R.id.txt_Web_stat_info);
         //串口配置按钮
         btnConfig = (Button) view.findViewById(R.id.frg_setting_btn_config);
         //测试页面
         btnTest = view.findViewById(R.id.test_page);
-        //一键载入数据打开所有端口
-        btn_all_start = view.findViewById(R.id.btn_all_start);
 
         txtUrl = (EditText) view.findViewById(R.id.txtUrl);
         txtWebsocket = (EditText) view.findViewById(R.id.txtWebsocket);
         cbx = view.findViewById(R.id.frag_setting_cbx_connect);
 
         //超时
-        editText_wait_ups = view.findViewById(R.id.editText_wait_ups);
-        editText_wait_query = view.findViewById(R.id.editText_wait_query);
-        btn_wait_query = view.findViewById(R.id.btn_wait_query);
 
         dbHelper = new MyDatabaseHelper(getContext(), 2);
         dbDataService = new DbDataService(dbHelper.getDb());
@@ -173,7 +176,7 @@ public class DevSettingFragment extends Fragment {
                 Toast.makeText(getContext(), "Init data finish", Toast.LENGTH_SHORT).show();
             }
         });
-        //载入数据库
+        //重新载入数据库
         Button btnRefreshData = (Button) view.findViewById(R.id.btn_refreshdata_fragment_dev_setting);
         btnRefreshData.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -186,21 +189,6 @@ public class DevSettingFragment extends Fragment {
                 } catch (Exception e) {
                     Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
-            }
-        });
-        //一键载入数据打开所有端口
-        btn_all_start.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                btnRefreshData.performClick();
-                btnSave1.performClick();
-                btnSave2.performClick();
-                btnSave3.performClick();
-                btnSave4.performClick();
-                btnOpenPort1.performClick();
-                btnOpenPort2.performClick();
-                btnOpenPort3.performClick();
-                btnOpenPort4.performClick();
             }
         });
 
@@ -232,45 +220,14 @@ public class DevSettingFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 if(b) {
-                    String strUrl = txtUrl.getText().toString();
-                    if(!MyUtil.isStringEmpty(strUrl)) {
-                        //device设备上传地址/api/dev
-                        LocalData.url = strUrl+"/dev";
-                    }
-                    String s = txtWebsocket.getText().toString().trim();
-                    if(!MyUtil.isStringEmpty(s)) {
-                        URI uri = URI.create(s);
-                        initMyWebsocket(uri);
-                    }
+                    dbDataService.updateParamValue("webConnect","true");
+                    CheckUrl();
+                }else {
+                    dbDataService.updateParamValue("webConnect","false");
                 }
             }
         });
-        //保存超时
-        btn_wait_query.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                try {
-                    int wait_ups = Integer.parseInt(editText_wait_ups.getText().toString());
-                    int wait_query = Integer.parseInt(editText_wait_query.getText().toString());
-                    if(wait_ups < 500){
-                        Toast.makeText(getContext(),"ups查询最小设置400",Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                    if(wait_query < 5000){
-                        Toast.makeText(getContext(),"主查询最小设置值5000,建议值10000",Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                    dbDataService.updateParamValue("main_query", String.valueOf(wait_query));
-                    dbDataService.updateParamValue("handle_wait_slim", String.valueOf(wait_ups));
-                    Toast.makeText(getContext(),"Save Success",Toast.LENGTH_LONG).show();
 
-
-                }catch (Exception e){
-                    Log.e(TAG,e.getMessage());
-                }
-
-            }
-        });
         //打开串口配置
         btnConfig.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -289,29 +246,25 @@ public class DevSettingFragment extends Fragment {
         btnSave1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String strBaudrate = txtBaudrate1.getText().toString();
-                SaveBaudrate(strBaudrate,1);
+                dbDataService.updateBaudrate(Integer.parseInt(txtBaudrate1.getText().toString()), 1);
             }
         });
         btnSave2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String strBaudrate = txtBaudrate2.getText().toString();
-                SaveBaudrate(strBaudrate,2);
+                dbDataService.updateBaudrate(Integer.parseInt(txtBaudrate2.getText().toString()), 2);
             }
         });
         btnSave3.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String strBaudrate = txtBaudrate3.getText().toString();
-                SaveBaudrate(strBaudrate,3);
+                dbDataService.updateBaudrate(Integer.parseInt(txtBaudrate3.getText().toString()), 3);
             }
         });
         btnSave4.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String strBaudrate = txtBaudrate4.getText().toString();
-                SaveBaudrate(strBaudrate,4);
+                dbDataService.updateBaudrate(Integer.parseInt(txtBaudrate4.getText().toString()), 4);
             }
         });
 
@@ -319,8 +272,6 @@ public class DevSettingFragment extends Fragment {
         btnOpenPort1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                try {
                     String strBaudrate =txtBaudrate1.getText().toString();
                     try {
                         baudrate1 = Integer.parseInt(strBaudrate);
@@ -329,34 +280,22 @@ public class DevSettingFragment extends Fragment {
                         Toast.makeText(getContext(), "Input baudrate", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    if(serialPort1==null) {
-                        serialPort1 = serialPortUtils1.openSerialPort(1, baudrate1);
-                        if(serialPort1 == null) {
-                            Toast.makeText(getContext(), "open serialport1 failed", Toast.LENGTH_SHORT).show();
-                            return;
-                        }else {
-                            Toast.makeText(getContext(), "open serialport1 ttyS0 success", Toast.LENGTH_SHORT).show();
-                        }
-                    }
 
-                } catch (Exception e) {
-                    Toast.makeText(getContext(), "open serialport1 failed,"+e.getMessage(), Toast.LENGTH_SHORT).show();
-                    return;
-                }
                 if(btnOpenPort1.getText().toString().equals("打开端口")) {
                     btnOpenPort1.setText(R.string.Close);
-                    devBizHandler1.setFlagSpRun(true);
+                    dbDataService.updateSerialPortState(1,1);
                 } else {
                     btnOpenPort1.setText(R.string.OPEN);
-                    devBizHandler1.setFlagSpRun(false);
+                    dbDataService.updateSerialPortState(0,1);
                 }
+                dbDataService.getSp();
             }
         });
 
         btnOpenPort2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
+
                     String strBaudrate = txtBaudrate2.getText().toString();
                     try {
                         baudrate2 = Integer.parseInt(strBaudrate);
@@ -365,31 +304,21 @@ public class DevSettingFragment extends Fragment {
                         Toast.makeText(getContext(), "Input baudrate", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    if(serialPort2==null) {
-                        serialPort2 = serialPortUtils2.openSerialPort(2, baudrate2);
-                        if(serialPort2 == null) {
-                            Toast.makeText(getContext(), "open serialport1 failed", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                    }
 
-                } catch (Exception e) {
-                    Toast.makeText(getContext(), "open serialport2 failed,"+e.getMessage(), Toast.LENGTH_SHORT).show();
-                    return;
-                }
                 if(btnOpenPort2.getText().toString().equals("打开端口")) {
                     btnOpenPort2.setText(R.string.Close);
-                    devBizHandler2.setFlagSpRun(true);
+                    dbDataService.updateSerialPortState(1,2);
                 } else {
                     btnOpenPort2.setText(R.string.OPEN);
-                    devBizHandler2.setFlagSpRun(false);
+                    dbDataService.updateSerialPortState(0,2);
                 }
+                dbDataService.getSp();
             }
         });
         btnOpenPort3.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
+
                     String strBaudrate = txtBaudrate3.getText().toString();
                     try {
                         baudrate3 = Integer.parseInt(strBaudrate);
@@ -398,31 +327,22 @@ public class DevSettingFragment extends Fragment {
                         Toast.makeText(getContext(), "Input baudrate", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    if(serialPort3==null) {
-                        serialPort3 = serialPortUtils3.openSerialPort(3, baudrate3);
-                        if(serialPort3 == null) {
-                            Toast.makeText(getContext(), "open serialport3 failed", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                    }
 
-                } catch (Exception e) {
-                    Toast.makeText(getContext(), "open serialport3 failed,"+e.getMessage(), Toast.LENGTH_SHORT).show();
-                    return;
-                }
+
                 if(btnOpenPort3.getText().toString().equals("打开端口")) {
                     btnOpenPort3.setText(R.string.Close);
-                    devBizHandler3.setFlagSpRun(true);
+                    dbDataService.updateSerialPortState(1,3);
                 } else {
                     btnOpenPort3.setText(R.string.OPEN);
-                    devBizHandler3.setFlagSpRun(false);
+                    dbDataService.updateSerialPortState(0,3);
                 }
+                dbDataService.getSp();
             }
         });
         btnOpenPort4.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
+
                     String strBaudrate = txtBaudrate4.getText().toString();
                     try {
                         baudrate4 = Integer.parseInt(strBaudrate);
@@ -431,355 +351,92 @@ public class DevSettingFragment extends Fragment {
                         Toast.makeText(getContext(), "Input baudrate", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    if(serialPort4==null) {
-                        serialPort4 = serialPortUtils4.openSerialPort(4, baudrate4);
-                        if(serialPort4 == null) {
-                            Toast.makeText(getContext(), "open serialport4 failed", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                    }
 
-                } catch (Exception e) {
-                    Toast.makeText(getContext(), "open serialport4 failed,"+e.getMessage(), Toast.LENGTH_SHORT).show();
-                    return;
-                }
+
                 if(btnOpenPort4.getText().toString().equals("打开端口")) {
                     btnOpenPort4.setText(R.string.Close);
-                    devBizHandler4.setFlagSpRun(true);
+                    dbDataService.updateSerialPortState(1,4);
                 } else {
                     btnOpenPort4.setText(R.string.OPEN);
-                    devBizHandler4.setFlagSpRun(false);
+                    dbDataService.updateSerialPortState(0,4);
                 }
+                dbDataService.getSp();
             }
         });
-        //定时发送http
-        handlerData.postDelayed(runnableData, 1000*60);
-        //初始化查询
-        serialPortUtils1 = new SerialPortUtils();
-        devBizHandler1 = new DevBizHandler(getContext(), serialPortUtils1,"1" );
-        new Thread(devBizHandler1).start();
-        serialPortUtils2 = new SerialPortUtils();
-        devBizHandler2 = new DevBizHandler(getContext(), serialPortUtils2, "2" );
-        new Thread(devBizHandler2).start();
-        serialPortUtils3 = new SerialPortUtils();
-        devBizHandler3 = new DevBizHandler(getContext(), serialPortUtils3, "3");
-        new Thread(devBizHandler3).start();
-        serialPortUtils4 = new SerialPortUtils();
-        devBizHandler4 = new DevBizHandler(getContext(), serialPortUtils4, "4" );
-        new Thread(devBizHandler4).start();
-
+        loaddata();
         return view;
     }
-    //Socket解析器
-    private Emitter.Listener onNewMessage = new Emitter.Listener() {
+
+
+
+
+    //检测Web连接
+    private void CheckUrl(){
+        Log.d(TAG,"检测Web连接");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Boolean connect = HttpUtil.checkUrl(txtWebsocket.getText().toString(),1000);
+                Message message = new Message();
+                if(connect) message.what = 1;
+                else message.what = 0;
+                handler_check_web.sendMessage(message);
+            }
+        }).start();
+    }
+    //创建发送hanlder
+    private Handler handler_check_web = new Handler(){
         @Override
-        public void call(final Object... args) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    JSONObject data = (JSONObject) args[0];
-                    Log.d(TAG,data.toString());
-                }
-            });
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what){
+                case 1:
+                    txt_Web_stat_info.setText("数据上传服务器连接成功");
+                    txt_Web_stat_info.setTextColor(0xFF006400);
+                    break;
+                case 0:
+                    txt_Web_stat_info.setText("数据上传服务器连接失败");
+                    txt_Web_stat_info.setTextColor(0xFFA52A2A);
+                    break;
+            }
         }
     };
-    //初始化socket，注册app，监听服务器操作
-    private void initMyWebsocket(URI uri) {
-        Log.d(TAG,"初始化socket连接");
-        Socket mSocket;
-        try {
-            //获取socket实例
-            mSocket = IO.socket(uri.toString());
-            //连接socket服务器
-            mSocket.connect();
-            //构造注册信息
-            JSONObject register = new JSONObject();
-            register.put("user","mac001");
-            //触发注册
-            mSocket.emit("AppRegister",register);
-            //注册监听
-            mSocket.on("operate",onNewMessage);
-
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-        /*MyWebSocketClient client = new MyWebSocketClient(uri) {
-                @Override
-                public void onMessage(String message) {
-                    Log.d(TAG,"初始化socket onMessage 监听");
-                    *//**
-                     * 命令格式：{DeviceCode:"xxxx",OptCode:"StartUps",OptType:"operate/query"}
-                     *//*
-                    try {
-                        JSONObject json = new JSONObject(message);
-                        String devCode = json.getString("DeviceCode");
-                        String optType = json.getString("OptType");
-                        String optCode = json.getString("OptCode");
-                        if(optType.equals(RuleEnum.OptType.QUERY.toString())) {
-                            queryData(devCode);
-                        } else if(optType.equals(RuleEnum.OptType.OPERATE.toString())) {
-                            Map<String, ViewEntity> map = LocalData.devDataMap.get(devCode);
-                            if(map == null) {
-                                Log.d(TAG, devCode+" offline");
-                                Toast.makeText(getContext(), devCode+" offline", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-                            DevEntity devEntity = null;
-                            String spNo = "";
-                            String devName="";
-                            for(DevEntity entity : LocalData.devlist) {
-                                if(entity.getCode().equals(devCode)) {
-                                    devEntity = entity;
-                                    spNo = entity.getSpNo();
-                                    devName = entity.getName();
-                                    break;
-                                }
-                            }
-
-                            String optValue = "";
-                            String optName="";
-                            for(DevOptEntity entity : LocalData.devoptlist) {
-                                if(entity.getOptCode().equals(optCode)) {
-                                    optValue = entity.getOptValue();
-                                    optName = entity.getOptName();
-                                    break;
-                                }
-                            }
-                            DevOptHisEntity devOptHisEntity = new DevOptHisEntity();
-                            devOptHisEntity.setDevCode(devCode);
-                            devOptHisEntity.setDevName(devName);
-                            devOptHisEntity.setOptName(optName);
-                            devOptHisEntity.setOptValue(optValue);
-                            switch (spNo){
-                                case "1":
-                                    devBizHandler1.addDevOpt(devOptHisEntity);
-                                    break;
-                                case "2":
-                                    devBizHandler2.addDevOpt(devOptHisEntity);
-                                    break;
-                                case "3":
-                                    devBizHandler3.addDevOpt(devOptHisEntity);
-                                    break;
-                                case "4":
-                                    devBizHandler4.addDevOpt(devOptHisEntity);
-                                    break;
-                            }
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            };*/
-    }
-
-
-    //send http data and save device data
-    Handler handlerData = new Handler();
-    Runnable runnableData = new Runnable() {
-        @Override
-        public void run() {
-            Log.d(TAG,"~~~~~~~~~~~~~~~");
-            for(String deviceCode : LocalData.devDataMap.keySet()) {
-                //get 设备信息
-                DevEntity devEntity = LocalData.Cache_all_devlist.get(deviceCode);
-                //查看是否是注册设备
-                if(devEntity == null) return;
-                //获取设备result协议列表
-                String protocolCode = devEntity.getProtocolCode();
-                //获取inst列表，协议-协议子集
-                List<String> instructionList = new ArrayList<>();
-                for(InstructionEntity instructionEntity:LocalData.Cache_instructionlist.get(protocolCode)){
-                    instructionList.add(instructionEntity.getCode());
-                }
-                Map<String,String> resultList = new HashMap<>();
-                for(String string:instructionList){
-                    for( ResultEntity resultEntity :LocalData.Cache_resultlist.get(string)){
-                        resultList.put(resultEntity.getFieldName(),resultEntity.getDisplayName());
-                    }
-                }
-                //获取fielddisplay
-                Map<String,String> fieldDisplayList = new HashMap<>();
-                for (FieldDisplayEntity fieldDisplayEntity:LocalData.Cache_fieldDisplaylist.get(protocolCode)){
-                    fieldDisplayList.put(fieldDisplayEntity.getDisplayName(),fieldDisplayEntity.getFieldName());
-                }
-                //读取设备数据
-                Map<String,ViewEntity> map = LocalData.devDataMap.get(deviceCode);
-
-
-                try {
-
-                    JSONObject data = new JSONObject();
-                    for(String key : map.keySet()) {
-                        data.put(resultList.get(fieldDisplayList.get(key)), map.get(key).getValue());
-                    }
-                    //组装body
-                    JSONObject Body = new JSONObject();
-                    Body.put("deviceCode",deviceCode);
-                    Body.put("date",new Date().toString());
-                    Body.put("data",data);
-                    Body.put("devType",LocalData.Cache_all_devlist.get(deviceCode).getTypeCode());
-                    Body.put("name",LocalData.Cache_all_devlist.get(deviceCode).getName());
-                    //获取Url
-                    String uri = LocalData.Cache_sysparamlist.get("http_uri").getParamValue();
-                    //send http
-                    if(!MyUtil.isStringEmpty(uri)) {
-                        HttpUtil.httpPost(uri+"/dev", Body.toString());
-                    }
-
-                    //save data
-                    DataHisEntity dataHisEntity = new DataHisEntity();
-                    dataHisEntity.setDevCode(deviceCode);
-                    dataHisEntity.setDevName(devEntity.getName());
-                    dataHisEntity.setSpCode(devEntity.getSpCode());
-                    dataHisEntity.setMsg(data.toString());
-                    dataHisEntity.setCreateTime(new Date());
-                    dbDataService.addDataHis(dataHisEntity);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-           // handlerData.postDelayed(this, 20000);
-        }
-    };
-
-    private void queryData(String deviceCode) {
-        try {
-            Map<String,ViewEntity> map1 = LocalData.devDataMap.get(deviceCode);
-            JSONObject json = new JSONObject();
-            for(String key2 : map1.keySet()) {
-                ViewEntity entity = map1.get(key2);
-                json.put(key2, entity.getValue());
-            }
-            if(!MyUtil.isStringEmpty(LocalData.url)) {
-                //HttpUtil.httpPost(LocalData.url, json.toString());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(getContext(), "Query error", Toast.LENGTH_SHORT).show();
-        }
-
-    }
-
 
     private void loaddata() {
-        dbDataService.getSp();
-        dbDataService.getSysParam();
         for(SpEntity entity : LocalData.splist) {
             switch (entity.getSeq()){
                 case 1:
                     txtBaudrate1.setText(String.valueOf(entity.getBaudrate()));
+                    if(entity.getState() == 1) btnOpenPort1.performClick();
                     break;
                 case 2:
                     txtBaudrate2.setText(String.valueOf(entity.getBaudrate()));
+                    if(entity.getState() == 1) btnOpenPort2.performClick();
                     break;
                 case 3:
                     txtBaudrate3.setText(String.valueOf(entity.getBaudrate()));
+                    if(entity.getState() == 1) btnOpenPort3.performClick();
                     break;
                 case 4:
                     txtBaudrate4.setText(String.valueOf(entity.getBaudrate()));
+                    if(entity.getState() == 1) btnOpenPort4.performClick();
                     break;
             }
         }
-        txtUrl.setText(LocalData.Cache_sysparamlist.get("http_uri").getParamValue());
-        txtWebsocket.setText(LocalData.Cache_sysparamlist.get("websocket_uri").getParamValue());
-        editText_wait_ups.setText(LocalData.Cache_sysparamlist.get("handle_wait_slim").getParamValue());
-        editText_wait_query.setText(LocalData.Cache_sysparamlist.get("main_query").getParamValue());
-
-    }
-    //保存Baudrate
-   public void SaveBaudrate(String strBaudrate,int seq){
-        try {
-            baudrate1 = Integer.parseInt(strBaudrate);
-
-        } catch (Exception e) {
-            Toast.makeText(getContext(), "Input integer", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        dbDataService.updateBaudrate(baudrate1, seq);
-        Toast.makeText(getContext(), "Succeed", Toast.LENGTH_SHORT).show();
-    }
-/*
-
-
-    boolean runflag1 = false;
-    boolean runflag2 = false;
-    boolean runflag3 = false;
-    boolean runflag4 = false;
-
-
-    final Handler handler = new Handler() {
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case 1:
-                    update();
+        for(String key:LocalData.Cache_sysparamlist.keySet()){
+            switch (key){
+                case "http_uri":
+                    txtUrl.setText(LocalData.Cache_sysparamlist.get(key).getParamValue());
+                    break;
+                case "websocket_uri":
+                    txtWebsocket.setText(LocalData.Cache_sysparamlist.get(key).getParamValue());
+                    break;
+                case "webConnect":
+                    if(LocalData.Cache_sysparamlist.get(key).getParamValue().equals("true")) cbx.setChecked(true);
                     break;
             }
-            super.handleMessage(msg);
-        }
-        void update() {
-            if(runflag1) {
-                try {
-                    //devBizHandler1 = new DevBizHandler(strProtocol1, getContext(), serialPortUtils1,txtDevname1.getText().toString().trim(),strType1 );
-                    devBizHandler1 = new DevBizHandler(getContext(), serialPortUtils1,"1" );
-                    Thread thread = new Thread(devBizHandler1);
-                    thread.start();
-
-                } catch (Exception e) {
-                    runflag1 = false;
-                    btnOpenPort1.setText("open");
-                    Toast.makeText(getContext(), "error, "+e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-            if(runflag2) {
-                try {
-                    devBizHandler2 = new DevBizHandler(getContext(), serialPortUtils2, "2" );
-                    Thread thread = new Thread(devBizHandler2);
-                    thread.start();
-                } catch (Exception e) {
-                    runflag2 = false;
-                    btnOpenPort2.setText("open");
-                    Toast.makeText(getContext(), "error, "+e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-            if(runflag3) {
-                try {
-                    devBizHandler3 = new DevBizHandler(getContext(), serialPortUtils3, "3");
-                    Thread thread = new Thread(devBizHandler3);
-                    thread.start();
-                } catch (Exception e) {
-                    runflag3 = false;
-                    btnOpenPort3.setText("open");
-                    Toast.makeText(getContext(), "error, "+e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-            if(runflag4) {
-                try {
-                    devBizHandler4 = new DevBizHandler(getContext(), serialPortUtils4, "4" );
-                    Thread thread = new Thread(devBizHandler4);
-                    thread.start();
-                } catch (Exception e) {
-                    runflag4 = false;
-                    btnOpenPort4.setText("open");
-                    Toast.makeText(getContext(), "error, "+e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        }
-    };
-
-*/
-
-
-
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
         }
     }
-
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -795,18 +452,9 @@ public class DevSettingFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+        dbDataService.initContextData();
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);

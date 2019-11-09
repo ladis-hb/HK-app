@@ -156,7 +156,8 @@ public class MyDatabaseHelper extends SQLiteOpenHelper {
             "id integer primary key autoincrement," +
             "code text," +
             "baud_rate integer," +
-            "seq integer" +
+            "seq integer," +
+            "state integer" +
             ")";
 
     public static final String CREATE_TABLE_DATA_HIS="create table data_his(" +
