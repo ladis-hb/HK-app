@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,44 +21,21 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import com.example.x6.serial.SerialPort;
-import com.github.nkzawa.emitter.Emitter;
-import com.github.nkzawa.socketio.client.IO;
-import com.github.nkzawa.socketio.client.Socket;
 
 import lads.dev.R;
 import lads.dev.activity.SpConfigActivity;
 import lads.dev.activity.TestActivity;
 import lads.dev.biz.DbDataService;
-import lads.dev.biz.DevBizHandler;
 import lads.dev.biz.LocalData;
-import lads.dev.entity.DataHisEntity;
-import lads.dev.entity.DevEntity;
-import lads.dev.entity.DevOptEntity;
-import lads.dev.entity.DevOptHisEntity;
-import lads.dev.entity.FieldDisplayEntity;
-import lads.dev.entity.InstructionEntity;
-import lads.dev.entity.ResultEntity;
 import lads.dev.entity.SpEntity;
-import lads.dev.entity.ViewEntity;
-import lads.dev.utils.DevOperate;
 import lads.dev.utils.HttpUtil;
 import lads.dev.utils.MyDatabaseHelper;
 import lads.dev.utils.MyUtil;
-import lads.dev.utils.SerialPortUtils;
+import lads.dev.viewadapter.WarningAdapter;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -120,10 +99,11 @@ public class DevSettingFragment extends Fragment {
         }
     }
     EditText txtBaudrate1,txtBaudrate2,txtBaudrate3,txtBaudrate4,txtUrl,txtWebsocket;
-    Button btnSave1,btnSave2,btnSave3,btnSave4,btnOpenPort1,btnOpenPort2,btnOpenPort3,btnOpenPort4,btnUrl,btnConfig,btnTest;
+    Button btnSave1,btnSave2,btnSave3,btnSave4,btnOpenPort1,btnOpenPort2,btnOpenPort3,btnOpenPort4,btnUrl,btnConfig,btnTest,btn_refresh_devInfo;
      private int baudrate1,baudrate2,baudrate3,baudrate4;
     CheckBox cbx;
-    TextView txt_Socket_stat_info,txt_Web_stat_info;
+    TextView txt_Socket_stat_info,txt_Web_stat_info,txt_mac,txt_SocketID;
+    RecyclerView li_devlist_all,li_devlist_online;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -131,6 +111,12 @@ public class DevSettingFragment extends Fragment {
         Log.d(TAG, "DevSettingFragment.onCreateView");
         // Inflate the layout for this fragment
         final View view = inflater.inflate(R.layout.fragment_dev_setting, container, false);
+
+        txt_mac = view.findViewById(R.id.txt_mac);
+        txt_SocketID = view.findViewById(R.id.txt_socketID);
+
+        li_devlist_all = view.findViewById(R.id.li_devlist_all);
+        li_devlist_online = view.findViewById(R.id.li_devlist_online);
 
         txtBaudrate1 = (EditText) view.findViewById(R.id.devSettingFragment_txt_baudrate1);
         txtBaudrate2 = (EditText) view.findViewById(R.id.devSettingFragment_txt_baudrate2);
@@ -145,10 +131,11 @@ public class DevSettingFragment extends Fragment {
         btnOpenPort3 = (Button) view.findViewById(R.id.devSettingFragment_btn_open3);
         btnOpenPort4 = (Button) view.findViewById(R.id.devSettingFragment_btn_open4);
 
+        btn_refresh_devInfo = view.findViewById(R.id.btn_refresh_devInfo);
+
         //http保存按钮
         btnUrl = (Button) view.findViewById(R.id.btnUrl);
         //txt_Socket_stat_info
-        txt_Socket_stat_info = view.findViewById(R.id.txt_Socket_stat_info);
         txt_Web_stat_info = view.findViewById(R.id.txt_Web_stat_info);
         //串口配置按钮
         btnConfig = (Button) view.findViewById(R.id.frg_setting_btn_config);
@@ -163,6 +150,17 @@ public class DevSettingFragment extends Fragment {
 
         dbHelper = new MyDatabaseHelper(getContext(), 2);
         dbDataService = new DbDataService(dbHelper.getDb());
+        //
+        btn_refresh_devInfo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dbDataService.getSp();
+                dbDataService.getSysParam();
+                loaddata();
+                loadDevList();
+
+            }
+        });
 
         //初始化数据库
         Button btnInitData = (Button) view.findViewById(R.id.btn_initdata_fragment_dev_setting);
@@ -363,11 +361,31 @@ public class DevSettingFragment extends Fragment {
                 dbDataService.getSp();
             }
         });
+        dbDataService.getSysParam();
         loaddata();
         return view;
     }
 
 
+    private void loadDevList(){
+        Set<String> dev_all = new HashSet<>();
+        for(String code:LocalData.Cache_all_devlist.keySet()){
+            dev_all.add(LocalData.Cache_all_devlist.get(code).getName());
+        }
+
+        //List<String> list_all = new ArrayList<>(dev_all);
+        Set<String> dev_online = new HashSet<>();
+        for(String spNo:LocalData.Cache_devlist.keySet()){
+           for(String code:LocalData.Cache_devlist.get(spNo).keySet()){
+               dev_online.add(LocalData.Cache_devlist.get(spNo).get(code).getName());
+           }
+        }
+        li_devlist_all.setLayoutManager(new LinearLayoutManager(getContext()));
+        li_devlist_all.setAdapter(new WarningAdapter(new ArrayList<>(dev_all)));
+
+        li_devlist_online.setLayoutManager(new LinearLayoutManager(getContext()));
+        li_devlist_online.setAdapter(new WarningAdapter(new ArrayList<>(dev_online)));
+    }
 
 
     //检测Web连接
@@ -376,6 +394,11 @@ public class DevSettingFragment extends Fragment {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 Boolean connect = HttpUtil.checkUrl(txtWebsocket.getText().toString(),1000);
                 Message message = new Message();
                 if(connect) message.what = 1;
@@ -407,32 +430,39 @@ public class DevSettingFragment extends Fragment {
             switch (entity.getSeq()){
                 case 1:
                     txtBaudrate1.setText(String.valueOf(entity.getBaudrate()));
-                    if(entity.getState() == 1) btnOpenPort1.performClick();
+                    if(entity.getState() == 1 && btnOpenPort1.getText().equals("打开端口")) btnOpenPort1.performClick();
                     break;
                 case 2:
                     txtBaudrate2.setText(String.valueOf(entity.getBaudrate()));
-                    if(entity.getState() == 1) btnOpenPort2.performClick();
+                    if(entity.getState() == 1&& btnOpenPort2.getText().equals("打开端口")) btnOpenPort2.performClick();
                     break;
                 case 3:
                     txtBaudrate3.setText(String.valueOf(entity.getBaudrate()));
-                    if(entity.getState() == 1) btnOpenPort3.performClick();
+                    if(entity.getState() == 1&& btnOpenPort3.getText().equals("打开端口")) btnOpenPort3.performClick();
                     break;
                 case 4:
                     txtBaudrate4.setText(String.valueOf(entity.getBaudrate()));
-                    if(entity.getState() == 1) btnOpenPort4.performClick();
+                    if(entity.getState() == 1&& btnOpenPort4.getText().equals("打开端口")) btnOpenPort4.performClick();
                     break;
             }
         }
         for(String key:LocalData.Cache_sysparamlist.keySet()){
+            String value=LocalData.Cache_sysparamlist.get(key).getParamValue();
             switch (key){
                 case "http_uri":
-                    txtUrl.setText(LocalData.Cache_sysparamlist.get(key).getParamValue());
+                    txtUrl.setText(value);
                     break;
                 case "websocket_uri":
-                    txtWebsocket.setText(LocalData.Cache_sysparamlist.get(key).getParamValue());
+                    txtWebsocket.setText(value);
                     break;
                 case "webConnect":
-                    if(LocalData.Cache_sysparamlist.get(key).getParamValue().equals("true")) cbx.setChecked(true);
+                    if(value.equals("true")) cbx.setChecked(true);
+                    break;
+                case "MacStr":
+                    txt_mac.setText(value);
+                    break;
+                case "SocketID":
+                    txt_SocketID.setText(value);
                     break;
             }
         }

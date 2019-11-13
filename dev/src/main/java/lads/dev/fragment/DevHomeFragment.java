@@ -4,12 +4,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.LinearLayoutManager;
@@ -25,12 +21,8 @@ import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import lads.dev.R;
 import lads.dev.biz.LocalData;
@@ -232,22 +224,6 @@ public class DevHomeFragment extends Fragment {
                         txtBasicInfo.setText(map.get("BasicInfo"));
                         txtBatInfo.setText(map.get("BatInfo"));
                         txtIoInfo.setText(map.get("IoInfo"));
-                        /*StringBuffer sb = new StringBuffer();
-                        sb.append("UPS名称："+entity.getName()+newLine);
-                        if(devMap.containsKey("工作模式")) sb.append("工作模式："+devMap.get("工作模式").getValue()+newLine);
-                        if(devMap.containsKey("相位")) sb.append("相位："+devMap.get("相位").getValue()+newLine);
-                        txtBasicInfo.setText(sb.toString());
-                        sb = new StringBuffer();
-                        if(devMap.containsKey("电池电压")) sb.append("电池电压："+devMap.get("电池电压").getValue()+newLine);
-                        if (devMap.containsKey("负电池电压"))sb.append("负电池电压："+devMap.get("负电池电压").getValue()+newLine);
-                        if(devMap.containsKey("剩余容量")) sb.append("剩余容量："+devMap.get("剩余容量").getValue()+newLine);
-                        txtBatInfo.setText(sb.toString());
-                        sb=new StringBuffer();
-                        if(devMap.containsKey("输入电压")) sb.append("输入电压："+devMap.get("输入电压").getValue()+newLine);
-                        if(devMap.containsKey("输入频率")) sb.append("输入频率："+devMap.get("输入频率").getValue()+newLine);
-                        if(devMap.containsKey("输出电压")) sb.append("输出电压："+devMap.get("输出电压").getValue()+newLine);
-                        if(devMap.containsKey("输出频率")) sb.append("输出频率："+devMap.get("输出频率").getValue()+newLine);
-                        txtIoInfo.setText(sb.toString());*/
                         break;
                     case "ac":
                         AcInfo +="设备名称:"+entity.getName()+"\n"+ FormatDevInfo.ShortAC(devid)+"\n";

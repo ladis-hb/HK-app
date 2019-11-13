@@ -20,40 +20,268 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            >
 
             <LinearLayout
-                android:layout_width="340dp"
+                android:layout_width="768dp"
                 android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:background="@drawable/border">
 
-                <TextView
-                    android:id="@+id/textView3"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingLeft="50dp"
-                    android:text="@string/operation"
-                    android:textColor="@color/black"
-                    android:textColorHint="#FC050202" />
+                    android:orientation="horizontal">
 
-                <Button
-                    android:id="@+id/btn_initdata_fragment_dev_setting"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/InitData" />
+                    <LinearLayout
+                        android:layout_width="493dp"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
 
-                <Button
-                    android:id="@+id/btn_refreshdata_fragment_dev_setting"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/RefreshData" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:paddingLeft="30dp"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="10dp">
 
-                <Button
-                    android:id="@+id/frg_setting_btn_config"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/ConfigSerialPort" />
-                <!--
+                            <TextView
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:text="SerialPort1:" />
+
+                            <EditText
+                                android:id="@+id/devSettingFragment_txt_baudrate1"
+                                android:layout_width="150dp"
+                                android:layout_height="wrap_content"
+                                android:hint="input baudrate... "
+                                android:inputType="number" />
+
+                            <Button
+                                android:id="@+id/devSettingFragment_btn_save1"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginLeft="10dp"
+                                android:text="@string/SAVE" />
+
+                            <Button
+                                android:id="@+id/devSettingFragment_btn_open1"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginLeft="10dp"
+                                android:text="@string/OPEN" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:paddingLeft="30dp"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="10dp">
+
+                            <TextView
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:text="SerialPort2:" />
+
+                            <EditText
+                                android:id="@+id/devSettingFragment_txt_baudrate2"
+                                android:layout_width="150dp"
+                                android:layout_height="wrap_content"
+                                android:hint="input baudrate... "
+                                android:inputType="number" />
+
+                            <Button
+                                android:id="@+id/devSettingFragment_btn_save2"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginLeft="10dp"
+                                android:text="@string/SAVE" />
+
+                            <Button
+                                android:id="@+id/devSettingFragment_btn_open2"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginLeft="10dp"
+                                android:text="@string/OPEN" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:paddingLeft="30dp"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="10dp">
+
+                            <TextView
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:text="SerialPort3:" />
+
+                            <EditText
+                                android:id="@+id/devSettingFragment_txt_baudrate3"
+                                android:layout_width="150dp"
+                                android:layout_height="wrap_content"
+                                android:hint="input baudrate... "
+                                android:inputType="number" />
+
+                            <Button
+                                android:id="@+id/devSettingFragment_btn_save3"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginLeft="10dp"
+                                android:text="@string/SAVE" />
+
+                            <Button
+                                android:id="@+id/devSettingFragment_btn_open3"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginLeft="10dp"
+                                android:text="@string/OPEN" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:paddingLeft="30dp"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="10dp">
+
+                            <TextView
+                                android:layout_width="100dp"
+                                android:layout_height="wrap_content"
+                                android:text="SerialPort4:" />
+
+                            <EditText
+                                android:id="@+id/devSettingFragment_txt_baudrate4"
+                                android:layout_width="150dp"
+                                android:layout_height="wrap_content"
+                                android:hint="input baudrate... "
+                                android:inputType="number" />
+
+                            <Button
+                                android:id="@+id/devSettingFragment_btn_save4"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginLeft="10dp"
+                                android:text="@string/SAVE" />
+
+                            <Button
+                                android:id="@+id/devSettingFragment_btn_open4"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginLeft="10dp"
+                                android:text="@string/OPEN" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/textView50"
+                                android:layout_width="93dp"
+                                android:layout_height="match_parent"
+                                android:paddingStart="30dp"
+                                android:paddingLeft="20dp"
+                                android:paddingTop="10dp"
+                                android:paddingRight="0dp"
+                                android:text="设备ID："
+                                android:textColor="#F80E0707" />
+
+                            <TextView
+                                android:id="@+id/txt_mac"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:paddingTop="10dp"
+                                android:textColor="#F80E0606" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/textView51"
+                                android:layout_width="93dp"
+                                android:layout_height="match_parent"
+                                android:paddingLeft="0dp"
+                                android:paddingTop="10dp"
+                                android:paddingRight="0dp"
+                                android:text="SocketID："
+                                android:textColor="#F80E0707" />
+
+                            <TextView
+                                android:id="@+id/txt_socketID"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:paddingTop="10dp"
+                                android:textColor="#F80E0606" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="35dp"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/textView52"
+                                android:layout_width="93dp"
+                                android:layout_height="match_parent"
+                                android:paddingStart="30dp"
+                                android:paddingLeft="20dp"
+                                android:paddingTop="10dp"
+                                android:paddingRight="0dp"
+                                android:text="设备ID："
+                                android:textColor="#F80E0707" />
+
+                            <TextView
+                                android:id="@+id/txt_aaa"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:paddingTop="10dp"
+                                android:text="123456789"
+                                android:textColor="#F80E0606" />
+                        </LinearLayout>
+
+                        <Button
+                            android:id="@+id/btn_refresh_devInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/refresh" />
+
+                        <Button
+                            android:id="@+id/btn_refreshdata_fragment_dev_setting"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/RefreshData" />
+
+                        <Button
+                            android:id="@+id/frg_setting_btn_config"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/ConfigSerialPort" />
+                        <!--
                 <EditText
                     android:id="@+id/txtTest_setting"
                     android:layout_width="300dp"
@@ -68,289 +296,127 @@
                     android:layout_gravity="right"
                     android:text="test" />-->
 
-                <Button
-                    android:id="@+id/test_page"
+                        <Button
+                            android:id="@+id/test_page"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/TestPage" />
+
+                        <Button
+                            android:id="@+id/btn_initdata_fragment_dev_setting"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/InitData" />
+
+                        <!-- <Button
+                     android:id="@+id/btn_all_start"
+                     android:layout_width="match_parent"
+                     android:layout_height="70dp"
+                     android:text="一键载入数据开启所有端口" />-->
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/TestPage" />
+                    android:orientation="vertical"
+                    android:paddingLeft="30dp"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp">
 
-                <Button
-                    android:id="@+id/btn_all_start"
-                    android:layout_width="match_parent"
-                    android:layout_height="70dp"
-                    android:text="一键载入数据开启所有端口" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="30dp"
+                        android:text="数据上传服务器："></TextView>
+
+                    <EditText
+                        android:id="@+id/txtUrl"
+                        android:layout_width="354dp"
+                        android:layout_height="wrap_content"
+                        android:hint="input server url ..."
+                        android:inputType="textUri" />
+
+                    <TextView
+                        android:id="@+id/textView"
+                        android:layout_width="113dp"
+                        android:layout_height="31dp"
+                        android:text="Socket服务器:" />
+
+                    <EditText
+                        android:id="@+id/txtWebsocket"
+                        android:layout_width="354dp"
+                        android:layout_height="wrap_content"
+                        android:hint="input control uri ..."
+                        android:inputType="textUri" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingLeft="30dp"
+                        android:paddingTop="10dp"
+                        android:paddingBottom="10dp">
+
+                        <Button
+                            android:id="@+id/btnUrl"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/SAVE" />
+
+                        <CheckBox
+                            android:id="@+id/frag_setting_cbx_connect"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="连接到远程服务器" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="54dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/txt_Web_stat_info"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:paddingLeft="50dp" />
+                        </LinearLayout>
+
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
             </LinearLayout>
-
-            <TextView
-                android:layout_width="2dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:textColor="#00070707"></TextView>
-
-            <LinearLayout
-                android:layout_width="638dp"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="horizontal"
-                    android:paddingLeft="30dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp">
-
-                    <TextView
-                        android:layout_width="100dp"
-                        android:layout_height="wrap_content"
-                        android:text="SerialPort1:" />
-
-                    <EditText
-                        android:id="@+id/devSettingFragment_txt_baudrate1"
-                        android:layout_width="150dp"
-                        android:layout_height="wrap_content"
-                        android:hint="input baudrate... " />
-
-                    <Button
-                        android:id="@+id/devSettingFragment_btn_save1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginLeft="10dp"
-                        android:text="@string/SAVE" />
-
-                    <Button
-                        android:id="@+id/devSettingFragment_btn_open1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginLeft="10dp"
-                        android:text="@string/OPEN" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="horizontal"
-                    android:paddingLeft="30dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp">
-
-                    <TextView
-                        android:layout_width="100dp"
-                        android:layout_height="wrap_content"
-                        android:text="SerialPort2:" />
-
-                    <EditText
-                        android:id="@+id/devSettingFragment_txt_baudrate2"
-                        android:layout_width="150dp"
-                        android:layout_height="wrap_content"
-                        android:hint="input baudrate... " />
-
-                    <Button
-                        android:id="@+id/devSettingFragment_btn_save2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginLeft="10dp"
-                        android:text="@string/SAVE" />
-
-                    <Button
-                        android:id="@+id/devSettingFragment_btn_open2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginLeft="10dp"
-                        android:text="@string/OPEN" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="horizontal"
-                    android:paddingLeft="30dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp">
-
-                    <TextView
-                        android:layout_width="100dp"
-                        android:layout_height="wrap_content"
-                        android:text="SerialPort3:" />
-
-                    <EditText
-                        android:id="@+id/devSettingFragment_txt_baudrate3"
-                        android:layout_width="150dp"
-                        android:layout_height="wrap_content"
-                        android:hint="input baudrate... " />
-
-                    <Button
-                        android:id="@+id/devSettingFragment_btn_save3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginLeft="10dp"
-                        android:text="@string/SAVE" />
-
-                    <Button
-                        android:id="@+id/devSettingFragment_btn_open3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginLeft="10dp"
-                        android:text="@string/OPEN" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="615dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="horizontal"
-                    android:paddingLeft="30dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp">
-
-                    <TextView
-                        android:layout_width="100dp"
-                        android:layout_height="wrap_content"
-                        android:text="SerialPort4:" />
-
-                    <EditText
-                        android:id="@+id/devSettingFragment_txt_baudrate4"
-                        android:layout_width="150dp"
-                        android:layout_height="wrap_content"
-                        android:hint="input baudrate... " />
-
-                    <Button
-                        android:id="@+id/devSettingFragment_btn_save4"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginLeft="10dp"
-                        android:text="@string/SAVE" />
-
-                    <Button
-                        android:id="@+id/devSettingFragment_btn_open4"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginLeft="10dp"
-                        android:text="@string/OPEN" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <TextView
-                android:layout_width="1dp"
-                android:layout_height="match_parent"></TextView>
-
-
-        </LinearLayout>
-
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#ddd"></TextView>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingLeft="30dp"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:text="数据上传服务器："></TextView>
-
-            <EditText
-                android:id="@+id/txtUrl"
-                android:layout_width="354dp"
-                android:layout_height="wrap_content"
-                android:hint="input server url ..."
-                android:inputType="textUri" />
-
-            <TextView
-                android:id="@+id/textView"
-                android:layout_width="113dp"
-                android:layout_height="31dp"
-                android:text="Socket服务器:" />
-
-            <EditText
-                android:id="@+id/txtWebsocket"
-                android:layout_width="354dp"
-                android:layout_height="wrap_content"
-                android:hint="input control uri ..."
-                android:inputType="textUri" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingLeft="30dp"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp">
-
-            <Button
-                android:id="@+id/btnUrl"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/SAVE" />
-
-            <CheckBox
-                android:id="@+id/frag_setting_cbx_connect"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="连接到远程服务器" />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="54dp"
+                android:layout_height="match_parent"
                 android:orientation="vertical">
-
                 <TextView
-                    android:id="@+id/txt_Socket_stat_info"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:paddingLeft="50dp"
-                    android:text="等待连接远程服务器" />
+                    android:layout_width="wrap_content"
+                    android:layout_height="20dp"
+                    android:text="在线设备:"
+                    android:textColor="@color/black"></TextView>
 
-                <TextView
-                    android:id="@+id/txt_Web_stat_info"
+                <android.support.v7.widget.RecyclerView
+                    android:id="@+id/li_devlist_online"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:paddingLeft="50dp" />
+                    android:layout_height="match_parent" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="0dp"
+                    android:text="所有设备:"
+                    android:textColor="@color/black"></TextView>
+
+
+                <android.support.v7.widget.RecyclerView
+                    android:id="@+id/li_devlist_all"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp" />
             </LinearLayout>
 
 
         </LinearLayout>
-
-
-        <!-- <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingLeft="30dp">
-            <TextView
-                android:id="@+id/textView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="SQL测试" />
-
-
-            <EditText
-                android:id="@+id/txt_sql_fragment_dev_setting"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="top"
-                android:hint="input sql here ..."
-                android:minLines="3" />
-            <Button
-                android:id="@+id/btn111"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="sql" />
-
-
-        </LinearLayout>-->
 
     </LinearLayout>
 </ScrollView>

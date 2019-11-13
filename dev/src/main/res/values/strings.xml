@@ -23,7 +23,7 @@
     <string name="Close">关闭端口</string>
     <string name="SerialPort">串口</string>
     <string name="InitData">数据库初始化</string>
-    <string name="RefreshData">载入数据库</string>
+    <string name="RefreshData">刷新数据库</string>
     <string name="BatteryInfo">电池信息</string>
     <string name="IOInfo">输入输出</string>
     <string name="BACK">返回</string>

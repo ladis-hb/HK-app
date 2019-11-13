@@ -86,15 +86,15 @@ public class FormatDevInfo {
      for(String key: LocalData.devDataMap.get(devid).keySet()){
          if(getUpsBasicInfo().contains(key)){
              BasicInfo +=key +":"+ LocalData.devDataMap.get(devid).get(key).getValue()+"\n";
-             break;
+             continue;
          }
          if(getUpsBatInfo().contains(key)) {
              BatInfo +=key +":"+  LocalData.devDataMap.get(devid).get(key).getValue()+"\n";
-             break;
+             continue;
          }
          if(getUpsIoInfo().contains(key)){
              IoInfo +=key +":"+  LocalData.devDataMap.get(devid).get(key).getValue()+"\n";
-             break;
+             continue;
          }
      }
      map.put("BasicInfo",BasicInfo);

@@ -1,7 +1,8 @@
 package lads.dev.utils;
 
-import android.content.Context;
+import android.util.Log;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -22,6 +23,8 @@ import lads.dev.entity.ViewEntity;
 public class QueryDevData_ToWeb_Save {
     private static MyDatabaseHelper dbHelper = new MyDatabaseHelper(MyApplication.getContext(), 2);
     private static DbDataService dbDataService = new DbDataService(dbHelper.getDb());
+    private static String uri = LocalData.Cache_sysparamlist.get("http_uri").getParamValue();
+    private static String TAG = "QueryDevData_ToWeb_Save";
     public static void QueryDevData_ToWeb_SaveTo(String deviceCode){
         //get 设备信息
         DevEntity devEntity = LocalData.Cache_all_devlist.get(deviceCode);
@@ -62,10 +65,10 @@ public class QueryDevData_ToWeb_Save {
             Body.put("data",data);
             Body.put("devType",LocalData.Cache_all_devlist.get(deviceCode).getTypeCode());
             Body.put("name",LocalData.Cache_all_devlist.get(deviceCode).getName());
-            //获取Url
-            String uri = LocalData.Cache_sysparamlist.get("http_uri").getParamValue();
+
             //send http
             if(!MyUtil.isStringEmpty(uri)) {
+                Log.e(TAG,"发送"+uri+"设备数据信息");
                 HttpUtil.AsyncHttpPost(uri+"/dev", Body.toString());
 
             }
@@ -81,5 +84,29 @@ public class QueryDevData_ToWeb_Save {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static void Alarm(String dev_name,String dev_type,String warn_title,String warn_content,String create_time){
+        Map<String,String> devlist = new HashMap<>();
+        for(String code:LocalData.Cache_all_devlist.keySet()){
+            devlist.put(LocalData.Cache_all_devlist.get(code).getName(),code);
+        }
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("DeviceId",devlist.get(dev_name));
+            jsonObject.put("Dev_name",dev_name);
+            jsonObject.put("Alarm_device",dev_type);
+            jsonObject.put("Alarm_type",warn_title);
+            jsonObject.put("Alarm_msg",warn_content);
+            jsonObject.put("Alarm_time",create_time);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        //send http
+        if(!MyUtil.isStringEmpty(uri)) {
+            Log.e(TAG,"发送"+uri+"报警信息");
+            HttpUtil.AsyncHttpPost(uri+"/Alarm", jsonObject.toString());
+        }
+
     }
 }

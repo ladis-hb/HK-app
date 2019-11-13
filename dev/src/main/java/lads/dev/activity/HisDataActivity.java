@@ -61,7 +61,8 @@ public class HisDataActivity extends AppCompatActivity {
 
     private void loadHisData() {
         List<KeyValueEntity> list = new ArrayList<>();
-        for(DataHisEntity dataHisEntity:dbDataService.getHisDataByDevcode(devCode)){
+        List<DataHisEntity> li = dbDataService.getHisDataByDevcode(devCode);
+        for(DataHisEntity dataHisEntity:li){
             String createTime = sdf.format(dataHisEntity.getCreateTime());
             String msg = dataHisEntity.getMsg();
             String s = "";

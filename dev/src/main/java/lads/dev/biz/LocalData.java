@@ -10,6 +10,7 @@ import java.util.Set;
 import lads.dev.dto.DevUpsDto;
 import lads.dev.entity.DevEntity;
 import lads.dev.entity.DevOptEntity;
+import lads.dev.entity.DevOptHisEntity;
 import lads.dev.entity.FieldDisplayEntity;
 import lads.dev.entity.InstructionEntity;
 import lads.dev.entity.ProtocolEntity;
@@ -40,8 +41,8 @@ public class LocalData {
     public static  Map<String,TypeEntity> Cache_typelist;
 
     //缓存设备列表
-    //string SerialPort Num ,list devlist
-    public static  Map<String,List<DevEntity>> Cache_devlist;
+    //string SerialPort Num ,map<code,entiny>
+    public static  Map<String,Map<String,DevEntity>> Cache_devlist;
     //string devcode ,list devlist
     public static  Map<String,DevEntity> Cache_all_devlist;
     //缓存协议列表
@@ -62,6 +63,13 @@ public class LocalData {
 
     //构造list，存储打开的端口号，
     public  static Set<String> Cache_Open_SpNo = new HashSet<>();
+    //存储串口使用状态
+    public static Map<Integer,Boolean> SerialPortState;
+
+    //缓存操作指令
+    public static Set<DevOptHisEntity> Cache_OptOprate = new HashSet<>();
+
+
 
 
 }

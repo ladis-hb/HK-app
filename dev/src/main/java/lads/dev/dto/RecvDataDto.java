@@ -4,12 +4,23 @@ public class RecvDataDto {
     private byte[] bytes;
     private int count;
     private int ret = 0;
+
+    public RecvDataDto() {
+    }
+
+    public RecvDataDto(byte[] buffer, int totalCount) {
+        this.bytes = buffer;
+        this.count = totalCount;
+    }
+
     public Integer getRet(){
         return ret;
     }
+
     public void setRet(Integer ret){
         this.ret = ret;
     }
+
     public byte[] getBytes() {
         return bytes;
     }

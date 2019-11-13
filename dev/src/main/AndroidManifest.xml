@@ -4,7 +4,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-
+    <!--请求开机启动权限-->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:name=".utils.MyApplication"
         android:allowBackup="true"
@@ -36,6 +37,16 @@
         <activity android:name=".activity.AddAcActivity" />
         <activity android:name=".activity.AddEmActivity" />
         <activity android:name=".activity.AddThActivity" />
+        <!--注册接收系统开机广播消息的广播接收者-->
+        <receiver
+            android:name=".MyBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <category android:name="android.intent.category.HOME" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

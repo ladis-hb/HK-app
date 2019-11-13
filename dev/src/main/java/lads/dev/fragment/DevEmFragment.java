@@ -36,6 +36,7 @@ import lads.dev.entity.BroadcastArguments;
 import lads.dev.entity.DevEntity;
 import lads.dev.entity.KeyValueEntity;
 import lads.dev.entity.ViewEntity;
+import lads.dev.utils.MyBroadCast;
 import lads.dev.utils.MyDatabaseHelper;
 import lads.dev.utils.MyUtil;
 import lads.dev.viewadapter.DevAdapter;
@@ -142,24 +143,13 @@ String TAG = "DEVEM";
         });
         loadEm();
         showDevInfo();
-        //定义广播接受器
-        LocalBroadcastManager localBroadcastManager;
-        IntentFilter intentFilter;
-        intentFilter = new IntentFilter();
-        //添加监听事件
-        intentFilter.addAction(BroadcastArguments.getEm());
-        //构造事件处理函数
-        BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        MyBroadCast.Recv(BroadcastArguments.getEm(),new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 //Toast.makeText(getContext(),intent.getStringExtra("devid"),Toast.LENGTH_LONG).show();
                 showDevInfo();
             }
-        };
-        //挂载广播器实例
-        localBroadcastManager = LocalBroadcastManager.getInstance(getContext());
-        //注册监听到实例
-        localBroadcastManager.registerReceiver(broadcastReceiver,intentFilter);
+        });
         return view;
     }
 

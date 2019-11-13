@@ -1,5 +1,10 @@
 package lads.dev.utils;
 
+import android.icu.text.SimpleDateFormat;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
+
+import java.util.Date;
 import java.util.List;
 
 public class MyUtil {
@@ -15,5 +20,10 @@ public class MyUtil {
             return true;
         }
         return false;
+    }
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public static String ForMatDate(Date date){
+        SimpleDateFormat sdf= new SimpleDateFormat("yyyyMMddHHmmssSSS");
+        return sdf.format(date.toString());
     }
 }

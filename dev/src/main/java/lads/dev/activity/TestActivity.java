@@ -5,16 +5,10 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.AndroidException;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
 
-import org.java_websocket.enums.ReadyState;
-
-import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -23,33 +17,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import com.example.x6.serial.SerialPort;
 import lads.dev.R;
 import lads.dev.biz.DbDataService;
-import lads.dev.biz.DevBizHandler;
 import lads.dev.biz.LocalData;
 import lads.dev.biz.RuleEnum;
 import lads.dev.dto.RecvDataDto;
 import lads.dev.entity.DevEntity;
-import lads.dev.entity.DevOptHisEntity;
 import lads.dev.entity.FieldDisplayEntity;
 import lads.dev.entity.InstructionEntity;
-import lads.dev.entity.LastWarnValueEntity;
 import lads.dev.entity.ProtocolEntity;
 import lads.dev.entity.ResultEntity;
 import lads.dev.entity.ViewEntity;
-import lads.dev.entity.WarnCfgEntity;
 import lads.dev.entity.WarnHisEntity;
 import lads.dev.utils.ChangeTool;
 import lads.dev.utils.MyDatabaseHelper;
-import lads.dev.utils.MyDevUtil;
-import lads.dev.utils.MyWebSocketClient;
 import lads.dev.utils.SerialPortUtils;
 
 public class TestActivity extends AppCompatActivity {

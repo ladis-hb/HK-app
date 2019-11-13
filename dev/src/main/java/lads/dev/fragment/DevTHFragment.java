@@ -37,6 +37,7 @@ import lads.dev.entity.DevEntity;
 import lads.dev.entity.KeyValueEntity;
 import lads.dev.entity.ViewEntity;
 import lads.dev.utils.MyApplication;
+import lads.dev.utils.MyBroadCast;
 import lads.dev.utils.MyDatabaseHelper;
 import lads.dev.utils.MyUtil;
 import lads.dev.viewadapter.DevAdapter;
@@ -143,7 +144,14 @@ public class DevTHFragment extends Fragment {
         });
         loadTh();
         showDevInfo();
-        //定义广播接受器
+        MyBroadCast.Recv(BroadcastArguments.getTh(),new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                showDevInfo();
+            }
+        });
+
+        /*//定义广播接受器
         LocalBroadcastManager localBroadcastManager;
         IntentFilter intentFilter;
         intentFilter = new IntentFilter();
@@ -153,14 +161,13 @@ public class DevTHFragment extends Fragment {
         BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Toast.makeText(getContext(),intent.getStringExtra("devid"),Toast.LENGTH_LONG).show();
                 showDevInfo();
             }
         };
         //挂载广播器实例
         localBroadcastManager = LocalBroadcastManager.getInstance(MyApplication.getContext());
         //注册监听到实例
-        localBroadcastManager.registerReceiver(broadcastReceiver,intentFilter);
+        localBroadcastManager.registerReceiver(broadcastReceiver,intentFilter);*/
         return view;
     }
 

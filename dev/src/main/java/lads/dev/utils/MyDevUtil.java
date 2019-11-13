@@ -48,7 +48,7 @@ public class MyDevUtil {
             //strMac = getLocalMacAddressFromWifiInfo(context);
             WifiManager wifi = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
             WifiInfo winfo = wifi.getConnectionInfo();
-            strMac =  winfo.getMacAddress();
+            strMac =  winfo.getMacAddress().replace(":","")+"@";
             Log.e("=====", "6.0以下"+strMac);
             return strMac;
         } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N

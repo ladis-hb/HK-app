@@ -27,7 +27,10 @@ import lads.dev.entity.SysParamEntity;
 import lads.dev.entity.TypeEntity;
 import lads.dev.entity.WarnCfgEntity;
 import lads.dev.entity.WarnHisEntity;
+import lads.dev.utils.MyApplication;
 import lads.dev.utils.MyDatabaseHelper;
+import lads.dev.utils.MyDevUtil;
+import lads.dev.utils.QueryDevData_ToWeb_Save;
 
 public class DbDataService {
     MyDatabaseHelper dbHelper;
@@ -126,7 +129,8 @@ public class DbDataService {
     }
     //获取设备信息
     public List<DevEntity> getDev() {
-        Map<String,List<DevEntity>> Cache_devlist = new HashMap<>();
+        //Map<String,DevEntity> dev = new HashMap<>();
+        Map<String,Map<String,DevEntity>> Cache_devlist = new HashMap<>();
         Map<String,DevEntity> Cache_all_devlist = new HashMap<>();
 
         List<DevEntity> list = new ArrayList<>();
@@ -149,11 +153,13 @@ public class DbDataService {
                 list.add(entity);
 
                 if(Cache_devlist.containsKey(spNo)){
-                    Cache_devlist.get(spNo).add(entity);
+                    Cache_devlist.get(spNo).put(entity.getCode(),entity);
                 }else {
-                    List<DevEntity> li = new ArrayList<>();
-                    li.add(entity);
-                    Cache_devlist.put(spNo,li);
+                    /*List<DevEntity> li = new ArrayList<>();
+                    li.add(entity);*/
+                    Map<String,DevEntity> map = new HashMap<>();
+                    map.put(entity.getCode(),entity);
+                    Cache_devlist.put(spNo,map);
                 }
                 //
                 Cache_all_devlist.put(code,entity);
@@ -442,6 +448,12 @@ public class DbDataService {
     public void addWarn(WarnHisEntity warnHisEntity) {
         db.execSQL("insert into warn_his(dev_name,dev_type,warn_title,warn_content,create_time) values(?,?,?,?,?)",
                 new String[]{warnHisEntity.getDevName(),warnHisEntity.getDevType(),warnHisEntity.getWarnTitle(),warnHisEntity.getWarnContent(),sdf.format(warnHisEntity.getCreateTime())});
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                QueryDevData_ToWeb_Save.Alarm(warnHisEntity.getDevName(),warnHisEntity.getDevType(),warnHisEntity.getWarnTitle(),warnHisEntity.getWarnContent(),sdf.format(warnHisEntity.getCreateTime()));
+            }
+        }).start();
     }
 
     //如果最近一条告警记录不是"设备掉线"，则添加
@@ -454,9 +466,10 @@ public class DbDataService {
                         new String[]{warnHisEntity.getDevName(),warnHisEntity.getDevType(),warnHisEntity.getWarnTitle(),warnHisEntity.getWarnContent(),sdf.format(warnHisEntity.getCreateTime())});
             }
         } else {
-            db.execSQL("insert into warn_his(dev_name,dev_type,warn_title,warn_content,create_time) values(?,?,?,?,?)",
+            addWarn(warnHisEntity);
+            /*db.execSQL("insert into warn_his(dev_name,dev_type,warn_title,warn_content,create_time) values(?,?,?,?,?)",
                     new String[]{warnHisEntity.getDevName(),warnHisEntity.getDevType(),warnHisEntity.getWarnTitle(),warnHisEntity.getWarnContent(),sdf.format(warnHisEntity.getCreateTime())});
-        }
+        */}
         cursor.close();
     }
     //添加设备
@@ -834,7 +847,8 @@ public class DbDataService {
         db.execSQL("insert into sys_param(param_name,param_value) values('webConnect','false')");
         db.execSQL("insert into sys_param(param_name,param_value) values('main_query','10000')");
         db.execSQL("insert into sys_param(param_name,param_value) values('handle_wait_slim','500')");
-
+        db.execSQL("insert into sys_param(param_name,param_value) values('SocketID','')");
+        db.execSQL("insert into sys_param(param_name,param_value) values(?,?)",new String[]{"MacStr", MyDevUtil.getMac(MyApplication.getContext())});
     }
 
 

@@ -190,36 +190,38 @@ public class SerialPortUtils {
     }*/
     //serialPort发送指令，等待数据返回
     public RecvDataDto readData(byte[] sendData, String readType) {
-        RecvDataDto recvData = new RecvDataDto();
+        byte[] buffer = new byte[512];
+        byte[] tmp = new byte[64];
+        int size;
+        int totalCount = 0;
         try {
             Log.e(TAG, "1 ===send data, size:"+sendData.length+";data:"+ChangeTool.ByteArrToHex(sendData));
+            //发送指令
             outputStream.write(sendData);
-
-            byte[] buffer = new byte[512];
-            byte[] tmp = new byte[64];
-            int size = -1;
-            int totalCount = 0;
-            if(readType.equals(RuleEnum.ReadType.LADSUPS.toString())) {
-                //Log.e(TAG, devCode+"1 ===send data, size:"+sendData.length+";data:"+ChangeTool.ByteArrToHex(sendData));
+            //判断指令是232还是485
+            if(readType.equals(RuleEnum.ReadType.LADSUPS.toString())) {//232
                 while(true) {
+                    //获取接受的byte字数
                     size = inputStream.read(tmp);
+                    //把接受的字符存入buffer
                     System.arraycopy(tmp, 0, buffer, totalCount, size);
+                    //递增tc
                     totalCount+=size;
-                    if(tmp[size-1]==(byte)0x0d) {
-                        break;
-                    }
+                    //流会一直接受字符，如果接受的字符0d，则接受完毕，退出循环
+                    if(tmp[size-1]==(byte)0x0d) break;
                 }
-                //Log.d(TAG, "2 === "+devCode+" receive data, size:" + totalCount+", "+ChangeTool.ByteArrToHex(buffer));
-
-            } else if(readType.equals(RuleEnum.ReadType.MODBUS.toString())) {
+            } else if(readType.equals(RuleEnum.ReadType.MODBUS.toString())) {//485
                 size = inputStream.read(tmp);
-                System.arraycopy(tmp, 0, buffer, totalCount, size);
+                //485会一次性接受所有字符,
                 if(size<3) {
                     Log.d(TAG, "recv data incomplete");
                     return null;
                 }
+                System.arraycopy(tmp, 0, buffer, totalCount, size);
+                //转化为16进制
                 String hexStr = ChangeTool.ByteArrToHex(tmp, 2, 1);
                 int i = ChangeTool.HexToInt(hexStr);
+
                 totalCount = size;
                 while(totalCount < i+5) { //接收总长度=数据长度+5
                     size = inputStream.read(tmp);
@@ -230,13 +232,11 @@ public class SerialPortUtils {
                 Log.d(TAG, "Unsupported query type");
             }
             Log.d(TAG, "2 ===  receive data, size:" + totalCount+", "+ChangeTool.ByteArrToHex(buffer));
-            recvData.setCount(totalCount);
-            recvData.setBytes(buffer);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return recvData;
+        return new RecvDataDto(buffer,totalCount);
     }
 
     public OnDataReceiveListener onDataReceiveListener = null;

@@ -2,38 +2,26 @@ package lads.dev.activity;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
 
 import com.github.nkzawa.emitter.Emitter;
-import com.github.nkzawa.socketio.client.IO;
-import com.github.nkzawa.socketio.client.Socket;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TimerTask;
 
 import lads.dev.R;
 import lads.dev.biz.DbDataService;
-import lads.dev.biz.DevBizHandler;
+import lads.dev.biz.DevQueryOprate;
 import lads.dev.biz.LocalData;
-import lads.dev.entity.DataHisEntity;
 import lads.dev.entity.DevEntity;
 import lads.dev.entity.DevOptEntity;
 import lads.dev.entity.DevOptHisEntity;
-import lads.dev.entity.FieldDisplayEntity;
-import lads.dev.entity.InstructionEntity;
-import lads.dev.entity.ResultEntity;
-import lads.dev.entity.ViewEntity;
 import lads.dev.fragment.DevAcFragment;
 import lads.dev.fragment.DevEmFragment;
 import lads.dev.fragment.DevHomeFragment;
@@ -42,12 +30,11 @@ import lads.dev.fragment.DevSettingFragment;
 import lads.dev.fragment.DevTHFragment;
 import lads.dev.fragment.DevUpsFragment;
 import lads.dev.utils.DevOperate;
-import lads.dev.utils.HttpUtil;
+import lads.dev.utils.MyApplication;
 import lads.dev.utils.MyDatabaseHelper;
-import lads.dev.utils.MyUtil;
+import lads.dev.utils.MyTimeTask;
 import lads.dev.utils.QueryDevData_ToWeb_Save;
-import lads.dev.utils.SocketUtil;
-import pl.com.salsoft.sqlitestudioremote.SQLiteStudioService;
+import lads.dev.utils.SocketIO;
 
 
 public class DevMainActivity extends AppCompatActivity implements DevHomeFragment.OnFragmentInteractionListener,
@@ -58,7 +45,6 @@ public class DevMainActivity extends AppCompatActivity implements DevHomeFragmen
 
     MyDatabaseHelper dbHelper;
     DbDataService dbDataService;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,47 +63,93 @@ public class DevMainActivity extends AppCompatActivity implements DevHomeFragmen
             dbDataService = new DbDataService(dbHelper.getDb());
             dbDataService.initContextData();
         }
-        //两个小时刷新一次在线设备
-        handlerData.postDelayed(runnableDataUpdateDevList, 2*60*60*1000);
-        //定时发送http
-        handlerData.postDelayed(runnableDataSendDataToWenAndSave, 1000*10);
-        initMyWebsocket();
-        //初始化查询
-        new Thread(new DevBizHandler()).start();
+
+        //开启定时任务
+        setInit();
     }
 
+    private void setInit(){
+
+        DevQueryOprate devQueryOprate = new DevQueryOprate();
+        //初始化dev查询
+        new MyTimeTask(10 * 1000, 10 * 1000, new TimerTask() {
+            @Override
+            public void run() {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //检查操作缓存里是否有待处理操作，有的话取出操作，遍历执行，
+                        Set<DevOptHisEntity> optrate = new HashSet<>(LocalData.Cache_OptOprate);
+                        if(optrate.size()>0){
+                            //清空操作缓存
+                            LocalData.Cache_OptOprate.clear();
+                            //遍历缓存
+                            for(DevOptHisEntity devOptEntity:optrate){
+                                Boolean optOk = DevOperate.addDevOpt(devOptEntity);
+                                if(optOk){
+                                    //Toast.makeText(MyApplication.getContext(), devOptEntity.getDevName()+devOptEntity.getOptName()+"操作执行成功",Toast.LENGTH_LONG).show();
+                                }else {
+                                    //执行失败
+                                    //重新把任务加入执行队列
+                                    LocalData.Cache_OptOprate.add(devOptEntity);
+                                    String info = devOptEntity.getDevName()+devOptEntity.getOptName()+"操作执行失败，已存入待执行队列，下一循环重试";
+                                    Log.e(TAG,info);
+                                    //Toast.makeText(MyApplication.getContext(),info,Toast.LENGTH_LONG).show();
+                                }
+                            }
+                        }
+                        //如果串口被占用则跳出本次循环，避免污染全局变量，导致程序崩溃
+                        if(LocalData.Cache_Open_SpNo.size()>0){
+                            Log.e(TAG,"有串口被占用则跳出本次循环，避免污染全局变量，导致程序崩溃");
+                            return;
+                        }
+                        devQueryOprate.StartQuery();
+                    }
+                }).start();
+            }
+        }).start();
+        //两个小时刷新一次在线设备
+        new MyTimeTask(2 * 60 * 60 * 1000,20000, new TimerTask() {
+            @Override
+            public void run() {
+                Log.d(TAG,"两个小时刷新一次在线设备");
+                dbDataService.getDev();
+            }
+        }).start();
+        //定时发送http
+        new MyTimeTask(1000 * 10*60*10,20000, new TimerTask() {
+            @Override
+            public void run() {
+                Log.d(TAG,"定时发送http");
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        for(String deviceCode : LocalData.devDataMap.keySet()) {
+                            QueryDevData_ToWeb_Save.QueryDevData_ToWeb_SaveTo(deviceCode);
+                        }
+                    }
+                }).start();
+            }
+        }).start();
+        //定时检查socket连接
+        new MyTimeTask(60 * 1000,20000, new TimerTask() {
+            @Override
+            public void run() {
+                if(SocketIO.mSocket == null) initMyWebsocket();
+            }
+        }).start();
+    }
 
     //----------------------------------------
     public void initMyWebsocket() {
-        Log.d(TAG,"初始化socket连接");
-        //if(!LocalData.Cache_sysparamlist.containsKey("webConnect") || LocalData.Cache_sysparamlist.get("webConnect").getParamValue().equals("false")) return;
-        if(!LocalData.Cache_sysparamlist.containsKey("webConnect") ){
-            Log.e(TAG,"连接参数未定义");
-            return;
-        }
-        if( LocalData.Cache_sysparamlist.get("webConnect").getParamValue().equals("false")){
-            Log.e(TAG,"连接参数false");
-            return;
-        }
-        Socket mSocket;
         try {
-            //获取socket实例
+            //监听操作指令
+            SocketIO.listen("operate",onNewMessage);
+            //监听掉线事件
+            SocketIO.listen("disconnect",onNewMessage);
+            //发送注册事件
+            SocketIO.register();
 
-            mSocket = IO.socket(LocalData.Cache_sysparamlist.get("websocket_uri").getParamValue());
-            //连接socket服务器
-            mSocket.connect();
-            //构造注册信息
-            JSONObject register = new JSONObject();
-            register.put("user","mac001");
-            //触发注册
-            Log.e(TAG,"注册socket");
-            mSocket.emit("AppRegister",register);
-            //注册监听
-            mSocket.once("operate",onNewMessage);
-
-
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -131,18 +163,25 @@ public class DevMainActivity extends AppCompatActivity implements DevHomeFragmen
                 @Override
                 public void run() {
                     //回传参数{Type：xx, ...arg:xxx},
+                    Log.e(TAG,args[0].toString());
+                    if(args[0].equals("")) return;
                     JSONObject data = (JSONObject) args[0];
+                    //Log.e(TAG,data.toString());
                     if(!data.has("Type")) return;
                     String Type = null;
                     try {
                         Type = data.getString("Type");
                         switch (Type){
+                            //响应掉线重连
+                            case "disconnect":
+                                SocketIO.register();
+                                break;
                             //响应注册成功事件
                             case "Register":
-                                Log.e(TAG,"socket服务器连接成功,唯一ID:"+data.getString("socketID"));
-                                //Toast.makeText(MyApplication.getContext(),"socket服务器连接成功,唯一ID:"+data.getString("socketID"),Toast.LENGTH_LONG).show();
-                                //txt_Socket_stat_info.setText("socket服务器连接成功,唯一ID:"+data.getString("socketID"));
-                                //txt_Socket_stat_info.setTextColor(0xFF006400);
+                                String SocketId = data.getString("socketID");
+                                Log.e(TAG,"socket服务器连接成功,唯一ID:"+SocketId);
+                                Toast.makeText(MyApplication.getContext(),"socket服务器连接成功,唯一ID:"+SocketId,Toast.LENGTH_LONG).show();
+                                dbDataService.updateParamValue("SocketID",SocketId);
                                 break;
                             //响应操作
                             case "Operate":
@@ -167,7 +206,7 @@ public class DevMainActivity extends AppCompatActivity implements DevHomeFragmen
                                         devOptHisEntity.setDevName(devEntity.getName());
                                         devOptHisEntity.setOptName(devOptEntity.getOptName());
                                         devOptHisEntity.setOptValue(devOptEntity.getOptValue());
-                                        DevOperate.addDevOpt(devOptHisEntity);
+                                        LocalData.Cache_OptOprate.add(devOptHisEntity);
 
                                         break;
                                     //下发查询操作
@@ -186,29 +225,9 @@ public class DevMainActivity extends AppCompatActivity implements DevHomeFragmen
         }
     };
 
-    //send http data and save device data
-    Handler handlerData = new Handler();
-    Runnable runnableDataSendDataToWenAndSave = new Runnable() {
-        @Override
-        public void run() {
-            Log.d(TAG,"~~~~~~~~~~~~~~~");
-            for(String deviceCode : LocalData.devDataMap.keySet()) {
-                QueryDevData_ToWeb_Save.QueryDevData_ToWeb_SaveTo(deviceCode);
-            }
-            handlerData.postDelayed(this, 1000*60*10);
-        }
-    };
     @Override
     public void onFragmentInteraction(Uri uri) {
         Log.d(TAG, "onFragmentInteraction");
     }
 
-    //2小时获取更新一次设备
-    Runnable runnableDataUpdateDevList = new Runnable() {
-        @Override
-        public void run() {
-            dbDataService.getDev();
-            handlerData.postDelayed(this, 2*60*60*1000);
-        }
-    };
 }

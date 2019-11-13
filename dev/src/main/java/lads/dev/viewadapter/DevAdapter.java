@@ -41,7 +41,7 @@ public class DevAdapter extends RecyclerView.Adapter<DevAdapter.ViewHolder>{
     }
 
 
-    class ViewHolder extends RecyclerView.ViewHolder {
+    static class ViewHolder extends RecyclerView.ViewHolder {
         TextView devText;
         public ViewHolder(View view) {
             super(view);

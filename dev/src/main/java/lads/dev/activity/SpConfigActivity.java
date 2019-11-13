@@ -27,6 +27,7 @@ import lads.dev.entity.KeyValueEntity;
 import lads.dev.entity.ProtocolEntity;
 import lads.dev.entity.SpEntity;
 import lads.dev.entity.TypeEntity;
+import lads.dev.utils.MyApplication;
 import lads.dev.utils.MyDatabaseHelper;
 import lads.dev.utils.MyDevUtil;
 import lads.dev.utils.MyUtil;
@@ -81,6 +82,8 @@ public class SpConfigActivity extends AppCompatActivity {
         LinearLayoutManager layoutManager2 = new LinearLayoutManager(this);
         rvDev.setLayoutManager(layoutManager);
         rvProtocol.setLayoutManager(layoutManager2);
+        //获取设备mac地址
+        strMac = LocalData.Cache_sysparamlist.get("MacStr").getParamValue();
 
         //设置默认SerialPort
         btn_Serilport1.setOnClickListener(new View.OnClickListener() {
@@ -168,6 +171,7 @@ public class SpConfigActivity extends AppCompatActivity {
         btnFinish.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                dbDataService.getDev();
                 finish();
             }
         });
@@ -231,9 +235,6 @@ public class SpConfigActivity extends AppCompatActivity {
         });
 
         loaddata();
-
-        strMac = "mac001";//MyDevUtil.getMac(this);//.replace(":", "").toUpperCase();
-
     }
 
 

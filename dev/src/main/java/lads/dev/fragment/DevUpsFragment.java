@@ -16,6 +16,7 @@ import android.os.Message;
 import android.renderscript.ScriptGroup;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -51,6 +52,7 @@ import lads.dev.entity.ProtocolEntity;
 import lads.dev.entity.ViewEntity;
 import lads.dev.entity.WarnHisEntity;
 import lads.dev.utils.DevOperate;
+import lads.dev.utils.MyBroadCast;
 import lads.dev.utils.MyDatabaseHelper;
 import lads.dev.utils.MyUtil;
 import lads.dev.viewadapter.DevAdapter;
@@ -110,19 +112,15 @@ public class DevUpsFragment extends Fragment {
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
     }
-    private LocalBroadcastManager localBroadcastManager;
-    IntentFilter intentFilter;
-
     private String deviceCode;
     DevAdapter devAdapter;
-    RecyclerView recyclerView;
+    RecyclerView recyclerView,recyclerViewWarn;
     String newLine;
     Button btnRefresh,btnHistory,btnOperate;
     DbDataService dbDataService;
     TextView txtBasicInfo;
     TextView txtBatInfo;
     TextView txtIoInfo;
-    DevUpsDto dto;
     //list
     List<DevEntity> devlist= new ArrayList<>();
     List<String> warninglist = new ArrayList<>();
@@ -135,16 +133,12 @@ public class DevUpsFragment extends Fragment {
         dbDataService = new DbDataService(dbHelper.getDb());
         View view = inflater.inflate(R.layout.fragment_dev_ups, container, false);
 
-        recyclerView = (RecyclerView) view.findViewById(R.id.recyclerview_ups);
-        btnRefresh = (Button) view.findViewById(R.id.devUpsFragment_btn_refresh) ;
-        btnHistory = (Button) view.findViewById(R.id.devUpsFragment_btn_his) ;
-        btnOperate = (Button) view.findViewById(R.id.devUpsFragment_btn_opt) ;
+        recyclerView =  view.findViewById(R.id.recyclerview_ups);
+        btnRefresh =  view.findViewById(R.id.devUpsFragment_btn_refresh) ;
+        btnHistory =  view.findViewById(R.id.devUpsFragment_btn_his) ;
+        btnOperate =  view.findViewById(R.id.devUpsFragment_btn_opt) ;
 
-        RecyclerView recyclerView2 = (RecyclerView) view.findViewById(R.id.recyclerview_warn_fragment_dev_ups);
-        LinearLayoutManager layoutManager2 = new LinearLayoutManager(getContext());
-        recyclerView2.setLayoutManager(layoutManager2);
-        WarningAdapter adapter = new WarningAdapter(warninglist);
-        recyclerView2.setAdapter(adapter);
+        recyclerViewWarn = (RecyclerView) view.findViewById(R.id.recyclerview_warn_fragment_dev_ups);
 
         txtBasicInfo = (TextView) view.findViewById(R.id.txt_ups_basicinfo_fragment_dev_ups);
         txtBatInfo = (TextView) view.findViewById(R.id.txt_ups_batinfo_fragment_dev_ups);
@@ -154,6 +148,7 @@ public class DevUpsFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 loadUps();
+                initWarnings();
             }
         });
 
@@ -206,8 +201,7 @@ public class DevUpsFragment extends Fragment {
                         devOptHisEntity.setDevCode(devEntity.getCode());
                         devOptHisEntity.setOptName(list.get(i).getOptName());
                         devOptHisEntity.setOptValue(list.get(i).getOptValue());
-                        DevOperate.addDevOpt(devOptHisEntity);
-                        Toast.makeText(getContext(), "succeed", Toast.LENGTH_SHORT).show();
+                        LocalData.Cache_OptOprate.add(devOptHisEntity);
                     }
 
                 });
@@ -215,24 +209,16 @@ public class DevUpsFragment extends Fragment {
             }
         });
 
-        loadUps();
-        initWarnings();
-        //定义广播接受器
-        intentFilter = new IntentFilter();
-        //添加监听事件
-        intentFilter.addAction(BroadcastArguments.getUps());
-        //构造事件处理函数
-        BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+
+        MyBroadCast.Recv(BroadcastArguments.getUps(),new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 //Toast.makeText(getContext(),intent.getStringExtra("devid"),Toast.LENGTH_LONG).show();
                 showDevInfo(intent.getStringExtra("devid"));
             }
-        };
-        //挂载广播器实例
-        localBroadcastManager = LocalBroadcastManager.getInstance(getContext());
-        //注册监听到实例
-        localBroadcastManager.registerReceiver(broadcastReceiver,intentFilter);
+        });
+        loadUps();
+        initWarnings();
         return view;
     }
 
@@ -245,7 +231,18 @@ public class DevUpsFragment extends Fragment {
         List<DevOptEntity> list = dbDataService.getDevOptByProtocol(protocolCode);
         return list;
     }
-
+    //
+    private void initWarnings() {
+        List<String> list =  new ArrayList<>();
+        for(WarnHisEntity warnHisEntity:dbDataService.getWarnHisByType("ups")){
+            list.add(warnHisEntity.getDevName()+":"+warnHisEntity.getWarnTitle()+"/"+warnHisEntity.getWarnContent()+"/"+warnHisEntity.getCreateTime().toString());
+        }
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        recyclerViewWarn.setLayoutManager(layoutManager);
+        //recyclerViewWarn.addItemDecoration(new DividerItemDecoration(getContext(),1));
+        WarningAdapter adapter = new WarningAdapter(list);
+        recyclerViewWarn.setAdapter(adapter);
+    }
     private void loadUps() {
         List<KeyValueEntity> list = new ArrayList<>();
         for(DevEntity entity : LocalData.devlist) {
@@ -309,17 +306,7 @@ public class DevUpsFragment extends Fragment {
     }
 
 
-    //
-    private void initWarnings() {
-        warninglist.clear();
-        List<WarnHisEntity> list = new ArrayList<>();
-        if(MyUtil.isStringEmpty(deviceCode)) {
-            list = dbDataService.getWarnHisByType("ups");
-        } else {
-            list = dbDataService.getWarnHisByDev(deviceCode);
-        }
 
-    }
 
 
     @Override
@@ -334,11 +321,6 @@ public class DevUpsFragment extends Fragment {
 
     public void reloadDev() {
         loadUps();
-        //devlist.clear();
-        //devlist.add("aa");
-//        upsAdapter = new UpsAdapter(DevUpsFragment.this, dbHelper.getWritableDatabase(), devlist);
-//        upsAdapter.setUpslist(devlist);
-//        recyclerView.setAdapter(upsAdapter);
     }
 
 

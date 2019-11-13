@@ -98,7 +98,7 @@ public class DevEntity {
     }
 
     public int getLostTimes() {
-        return lostTimes;
+        return this.lostTimes;
     }
 
     public void setLostTimes(int lostTimes) {
