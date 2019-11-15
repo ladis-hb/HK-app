@@ -81,6 +81,7 @@ public class DevMainActivity extends AppCompatActivity implements DevHomeFragmen
                         //检查操作缓存里是否有待处理操作，有的话取出操作，遍历执行，
                         Set<DevOptHisEntity> optrate = new HashSet<>(LocalData.Cache_OptOprate);
                         if(optrate.size()>0){
+
                             //清空操作缓存
                             LocalData.Cache_OptOprate.clear();
                             //遍历缓存

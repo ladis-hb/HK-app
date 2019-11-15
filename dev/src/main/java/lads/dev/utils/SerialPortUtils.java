@@ -1,71 +1,74 @@
 package lads.dev.utils;
 
-import android.os.Looper;
-import android.os.MessageQueue;
 import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import com.example.x6.serial.SerialPort;
-import lads.dev.biz.RuleEnum;
-import lads.dev.dto.RecvDataDto;
+
+import lads.dev.biz.LocalData;
 
 /**
  * Created by Administrator on 2019-07-01
  */
 public class SerialPortUtils {
     private final String TAG = "SerialPortUtils";
-    //private String path = "/dev/ttyS1";
-    //private String path = "/dev/ttyAMA3";
-    private String path = "/dev/";
-    //private int baudrate = 115200;
-    public boolean serialPortStatus = false; //是否打开串口标志
+    private boolean serialPortStatus = false; //是否打开串口标志
     public String data_;
-    public boolean threadStatus; //线程状态，为了安全终止线程
+    private boolean threadStatus; //线程状态，为了安全终止线程
+    public SerialPort serialPort;
+    private InputStream inputStream ;
+    private OutputStream outputStream;
 
-    public SerialPort serialPort = null;
-    public InputStream inputStream = null;
-    public OutputStream outputStream = null;
-    public ChangeTool changeTool = new ChangeTool();
-    int flag = -1;
-    String readType="";
+    public SerialPortUtils(String spNo, int bauxite){
+        String path = "/dev/";
+        try {
+            String s = "";
+            switch (spNo){
+                case "1":
+                    s="ttyS0";
+                    break;
+
+                case "2":
+                    s="ttyS1";
+                    break;
+                case "3":
+                    s="ttyS2";
+                    break;
+
+                case "4":
+                    s="ttyS3";
+                    break;
+            }
+
+            path+=s;
+            if(LocalData.SerialPort.containsKey(spNo)){
+                serialPort = LocalData.SerialPort.get(spNo);
+            }else {
+                serialPort = new SerialPort(new File(path),bauxite,0);
+                LocalData.SerialPort.put(spNo,serialPort);
+            }
+            //获取打开的串口中的输入输出流，以便于串口数据的收发
+            inputStream = serialPort.getInputStream();
+            outputStream = serialPort.getOutputStream();
+        } catch (IOException e) {
+            Log.e(TAG, "openSerialPort: 打开串口异常：" + e.toString());
+        }
+    }
+
+    public SerialPortUtils(){
+
+    }
 
     /**
      * 打开串口
      * @return serialPort串口对象
      */
-//    public SerialPort openSerialPort(){
-//        try {
-//            serialPort = new SerialPort(new File(path),baudrate,0);
-//            this.serialPortStatus = true;
-//            threadStatus = false; //线程状态
-//
-//            //获取打开的串口中的输入输出流，以便于串口数据的收发
-//            inputStream = serialPort.getInputStream();
-//            outputStream = serialPort.getOutputStream();
-//
-//            //new ReadThread().start(); //开始线程监控是否有数据要接收
-//        } catch (IOException e) {
-//            Log.e(TAG, "openSerialPort: 打开串口异常：" + e.toString());
-//            return serialPort;
-//        }
-//        Log.d(TAG, "openSerialPort: 打开串口");
-//        return serialPort;
-//    }
     public SerialPort openSerialPort(int n, int baudrate){
+        String path = "/dev/";
         try {
             String s = "";
             switch (n){
@@ -84,19 +87,7 @@ public class SerialPortUtils {
                     s="ttyS3";
                     break;
             }
-            /*if(n==1) {
-//                s="ttyAMA0";
 
-            } else if(n==2) {
-//                s="ttyAMA1";
-
-            } else if(n==3) {
-//                s="ttyAMA2";
-
-            } else if(n==4) {
-//                s="ttyAMA3";
-
-            }*/
             path+=s;
             serialPort = new SerialPort(new File(path),baudrate,0);
             this.serialPortStatus = true;
@@ -133,7 +124,18 @@ public class SerialPortUtils {
         Log.d(TAG, "closeSerialPort: 关闭串口成功");
     }
 
-    /**
+    public void closeSerialPort(Boolean disconnect) {
+        try {
+            inputStream = null;
+            outputStream = null;
+            serialPort = null;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+        /**
      * 发送串口指令（字符串）
      * @param data String数据指令
      */
@@ -152,45 +154,77 @@ public class SerialPortUtils {
 
     }
 
-   /* public RecvDataDto readOvertime(byte[] sendData, String devCode, String readType, RecvDataDto recvData){
-        int ret=0;
-        RecvDataDto result = new RecvDataDto();
-        ExecutorService executorService = Executors.newFixedThreadPool(1);
-        Callable<RecvDataDto> readTask = new Callable<RecvDataDto>() {
-            @Override
-            public RecvDataDto call() throws Exception {
-               return readData(sendData, devCode, readType, recvData);
-            }
-        };
-        Future<RecvDataDto> future = executorService.submit(readTask);
-        try {
-            future.get(5000, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            e.printStackTrace();
-            ret=-1;
-        } finally {
-            future.cancel(true);
-            executorService.shutdown();
 
-            try {
-                if(future.get() == null){
-                   result.setRet(-1);
-                }else {
-                    result = future.get();
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            }
-
-            result.setRet(ret);
-            return result;
-        }
-    }*/
     //serialPort发送指令，等待数据返回
-    public RecvDataDto readData(byte[] sendData, String readType) {
-        byte[] buffer = new byte[512];
+    //public RecvDataDto readData(byte[] sendData, String readType) {
+   public byte[] readData(byte[] sendData, String readType) {
+       byte[] result = new byte[0];
+       int conut = 0;
+       try {
+           Log.e(TAG, "1 ===send data, size:"+sendData.length+";data:"+ChangeTool.ByteArrToHex(sendData));
+           outputStream.write(sendData);
+           int islet = inputStream.available();
+           switch (readType){
+               //485and232协议处理方式不同，
+               // 485是一次接受所有数据，但会有延时，所以做超时等待
+               //232马上会有数据返回，但回传方式为单字节，需要持续接受，值至接受到0d字符
+               case "1":
+                   //485
+                   //等待响应100mills,50ms查询一次结果
+                   while (inputStream.available() == 0 && conut <= 20) {
+                       //Log.e(TAG, "1 ===wait data, data length is 0,wait mills:"+conut);
+                       Thread.sleep(50);
+                       conut++;
+                   }
+                   islet = inputStream.available();
+                   result = new byte[islet];
+                   inputStream.read(result, 0, islet);
+                   break;
+               case "2"://ups
+                   byte[] tmp = new byte[512];
+                   //等待1000ms
+                   while (inputStream.available() == 0 && conut <= 20) {
+                       //Log.e(TAG, "1 ===wait data ups, data length is 0,wait mills:"+conut);
+                       Thread.sleep(50);
+                       conut++;
+                   }
+                   //如果还未收到数据退出
+                   if(inputStream.available() == 0) return result;
+                   //收到数据长度
+                   islet = inputStream.available();
+                   //获取数据内容
+                   inputStream.read(tmp,0,islet);
+                   //如果尾部没有od循环等待数据输入
+                   //Log.e(TAG, "length："+islet+"::"+ChangeTool.Byte2Hex(tmp[islet-1]));
+                   while (tmp[islet-1]!=(byte)0x0d){
+                       //Log.e(TAG, "已收到数据，但数据不齐，等待数据流："+ChangeTool.ByteArrToHex(tmp));
+                       //判断是否有新数据
+                       if(inputStream.available() == 0) continue;
+                       //Log.e(TAG, "重新赋值"+inputStream.available());
+                       int i = inputStream.available()+islet;
+                       inputStream.read(tmp,islet,i);
+                       islet =i;
+                       //Log.e(TAG, "length："+islet+"::"+ChangeTool.Byte2Hex(tmp[islet-1]));
+                       //Thread.sleep(50);
+                       /*if(conut > 20 && inputStream.available() == islet){
+                           return result;
+                       }else if(conut > 20 && inputStream.available() != 0){
+                           conut = 0;
+                       }
+                       conut++;*/
+                   }
+                   Log.e(TAG, "已收到全部数据："+ChangeTool.ByteArrToHex(tmp));
+                   result = new byte[islet];
+                   System.arraycopy(tmp,0,result,0,islet);
+                   break;
+           }
+           Log.d(TAG, "1 ===send data, size:"+sendData.length+";data:"+ChangeTool.ByteArrToHex(sendData)+"2 ===  receive data, size:" + result.length+", "+ChangeTool.ByteArrToHex(result));
+       } catch (IOException | InterruptedException e) {
+           e.printStackTrace();
+       }
+       return result;
+
+       /*byte[] buffer = new byte[512];
         byte[] tmp = new byte[64];
         int size;
         int totalCount = 0;
@@ -227,16 +261,19 @@ public class SerialPortUtils {
                     size = inputStream.read(tmp);
                     System.arraycopy(tmp, 0, buffer, totalCount, size);
                     totalCount+=size;
+
                 }
             } else {
                 Log.d(TAG, "Unsupported query type");
             }
-            Log.d(TAG, "2 ===  receive data, size:" + totalCount+", "+ChangeTool.ByteArrToHex(buffer));
-
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return new RecvDataDto(buffer,totalCount);
+       byte[] result = new byte[totalCount];
+       System.arraycopy(buffer,0,result,0,totalCount);
+
+       Log.d(TAG, "1 ===send data, size:"+sendData.length+";data:"+ChangeTool.ByteArrToHex(sendData)+"2 ===  receive data, size:" + result.length+", "+ChangeTool.ByteArrToHex(result));
+        return result;*/
     }
 
     public OnDataReceiveListener onDataReceiveListener = null;

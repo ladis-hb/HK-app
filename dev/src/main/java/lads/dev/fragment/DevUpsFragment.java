@@ -210,15 +210,16 @@ public class DevUpsFragment extends Fragment {
         });
 
 
+
+        loadUps();
+        initWarnings();
         MyBroadCast.Recv(BroadcastArguments.getUps(),new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 //Toast.makeText(getContext(),intent.getStringExtra("devid"),Toast.LENGTH_LONG).show();
-                showDevInfo(intent.getStringExtra("devid"));
+                showDevInfo(deviceCode);
             }
         });
-        loadUps();
-        initWarnings();
         return view;
     }
 
@@ -250,6 +251,7 @@ public class DevUpsFragment extends Fragment {
                 KeyValueEntity kv = new KeyValueEntity(entity.getCode(), entity.getName());
                 devlist.add(entity);
                 list.add(kv);
+                deviceCode = entity.getCode();
             }
         }
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());

@@ -1,6 +1,8 @@
 package lads.dev.biz;
 
 
+import com.example.x6.serial.SerialPort;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -20,6 +22,7 @@ import lads.dev.entity.SysParamEntity;
 import lads.dev.entity.TypeEntity;
 import lads.dev.entity.ViewEntity;
 import lads.dev.entity.WarnCfgEntity;
+import lads.dev.utils.SerialPortUtils;
 
 public class LocalData {
     public static DevUpsDto devUpsDto;
@@ -63,8 +66,8 @@ public class LocalData {
 
     //构造list，存储打开的端口号，
     public  static Set<String> Cache_Open_SpNo = new HashSet<>();
-    //存储串口使用状态
-    public static Map<Integer,Boolean> SerialPortState;
+    //存储串口句柄
+    public static Map<String,SerialPort> SerialPort = new HashMap<>();
 
     //缓存操作指令
     public static Set<DevOptHisEntity> Cache_OptOprate = new HashSet<>();
